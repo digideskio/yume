@@ -14,6 +14,13 @@ ARENA_LEFT_POS = 30
 ARENA_TOP_POS = 20
 ARENA_WIDTH = 800
 ARENA_HEIGHT = 600
+CELL_WIDTH = 25
+CELL_HEIGHT = 25
+CELLS_X = ARENA_WIDTH / CELL_WIDTH
+CELLS_Y = ARENA_HEIGHT / CELL_HEIGHT
+
+def tupleadd(tup1, tup2):
+  return [a + b for a, b in zip(tup1, tup2)]
 
 class Global(object):
   pass
@@ -51,6 +58,51 @@ class Bottom(pygame.sprite.Sprite):
 class Monster(pygame.sprite.Sprite):
   def __init__(self):
     pygame.sprite.Sprite.__init__(self)
+    self.waypoint_index = 1
+    self.waypoints = [(0, 0)]
+    self.hp = 10
+    self.worth = 4
+    self.calc_vector = True
+    self.vector_y = 0
+    self.vector_x = 0
+    self.speed = 1
+    self.killer = None
+
+  def walk(self):
+    if self.hp <= 0:
+      return
+    try:
+      waypoint = self.waypoints[self.waypoint_index]
+    except:
+      Global.yume.interface.crash()
+      self.die()
+    else:
+      x = waypoint[0] - self.x
+      y = waypoint[1] - self.y
+      if self.calc_vector:
+        rotation = atan2(y, x)
+        self.vector_x = cos(rotation)
+        self.vector_y = sin(rotation)
+        self.calc_vector = False
+      distance = sqrt(x*x+y*y)
+      if distance < 10:
+        self.waypoint_index += 1
+        self.calc_vector = True
+      else:
+        self.t += pi / 20
+        self.x += self.vector_x * self.speed
+        self.y += self.vector_y * self.speed
+
+    self.rect.center = (self.x, self.y)
+
+  def die(self):
+    self.hp = 0
+
+  def damage(self, damage, dealer):
+    if self.hp > 0:
+      self.hp -= damage
+      if self.hp <= 0:
+        self.killer = dealer
 
 class Lame(Monster):
   def __init__(self):
@@ -62,10 +114,8 @@ class Lame(Monster):
     self.t = random.randint(0, 20)
 
   def update(self):
-    self.t += pi / 20
-    self.y += cos(self.t)
-    self.x += 2 + sin(self.t)
-    self.rect.center = (self.x, self.y)
+    self.walk()
+    self.rect.center = (self.x + sin(self.t) * 10, self.y + cos(self.t)**2 * 10)
 
 class Tower(pygame.sprite.Sprite):
   def __init__(self):
@@ -77,10 +127,20 @@ class Tower(pygame.sprite.Sprite):
 class TowerPrototype(Tower):
   imagefile = 'turret-1-1.png'
   cost = 30
+
   def __init__(self):
     Tower.__init__(self)
     self.image = Global.images.load(self.imagefile)
     self.rect = self.image.get_rect()
+
+  def update(self):
+    for monster in Global.yume.interface.arena.level.mobrenderer:
+      if self.distance(*monster.rect.center) < 50:
+        monster.damage(1, self)
+
+  def distance(self, x1, y1):
+    x2, y2 = self.rect.center
+    return sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
 
 class Dragger(pygame.sprite.Sprite):
   def __init__(self):
@@ -106,6 +166,7 @@ class Interface(object):
     self.bottom3 = Bottom()
     self.manabar = Global.images.make_sprite('mana.png')
     self.menubar = Global.images.make_sprite('menu.png')
+    self.wave_marker = pygame.Surface((30, ARENA_HEIGHT))
     self.container = [self.bottom1, self.bottom2, self.bottom3, self.manabar,
         self.menubar]
     self.renderer = pygame.sprite.RenderPlain(self.container)
@@ -117,8 +178,11 @@ class Interface(object):
     self.last_update = time.time()
     self.mana = max(0, min(self.mana + self.mana_regen * dt, self.mana_max))
 
+  def crash(self):
+    self.mana = int(self.mana * 0.5)
+
   def draw(self, screen):
-    w,h = screen.get_size()
+    w, h = screen.get_size()
     self.bottom1.rect.bottomleft = 0, h
     self.bottom2.rect.bottomleft = 500, h
     self.bottom3.rect.bottomleft = 1000, h
@@ -136,6 +200,13 @@ class Interface(object):
       text = self.font.render(text, 1, (color, color, color))
       color -= 24
       screen.blit(text, (x, y))
+    y = ARENA_TOP_POS + self.arena.level.delay * 10
+    for wave in self.arena.level.waves:
+      if y > ARENA_HEIGHT:
+        break
+      rect = pygame.Rect((0, y), (20, 20))
+      pygame.draw.rect(screen, (100, 0, 100), rect)
+      y += max(25, wave.delay * 10)
 
   def click(self, pos, button):
     if self.arena.rect.collidepoint(pos):
@@ -148,6 +219,9 @@ class Interface(object):
             self.renderer.remove(self.dragging_sprite)
         else:
           Global.yume.log("Not enough mana!" + str(random.randint(1,10)))
+    elif button != 2 and self.dragging:
+      self.dragging = None
+      self.renderer.remove(self.dragging_sprite)
 
   def press(self, key):
     if key == K_1:
@@ -160,57 +234,105 @@ class Interface(object):
 
 class Level(object):
   def __init__(self):
-    self.waypoints = [(10, 0), (10, 4), (3, 4), (3, 8), (12, 8), (12, 16),
-        (6, 16), (6, 21), (18, 21), (18, 8), (32, 8)]
+    self.waves = deque()
+    self.waypoints = [(0, 0)]
+    self.delay = 1
+    self.last_update = 0
 
   def initialize(self):
+    self.mobrenderer = pygame.sprite.RenderPlain([])
+    self.cells = [[1] * CELLS_X for _ in range(CELLS_Y)]
+    self.remove_wave = 0
+    self.active_waves = set()
     self.surface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
-#    self.surface_red = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
-#    self.surface_green = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
-#    self.surface_blue = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
-#    self.surfaces = [self.surface_red, self.surface_green, self.surface_blue]
-#    colors = [(200, 0, 0), (0, 200, 0), (0, 0, 200)]
+    self.mobsurface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
+    self.mobsurface.set_colorkey((0, 0, 0))
+    self.mobsurface = self.mobsurface.convert()
 
     def mult(pair):
       return (pair[0] * 25, pair[1] * 25)
 
-#    pygame.draw.lines(self, (0, 255, 0), False, map(mult, self.waypoints), 25)
+    self.waypoints_scaled = map(mult, self.waypoints)
 
     t1 = time.time()
-#    for surface in self.surfaces:
-#      surface.lock()
-#      surface.fill((0, 0, 0))
     self.surface.lock()
     self.surface.fill((0, 0, 0))
     for wp in self.waypoints:
-      wp_m = (wp[0] * 25 + 1, wp[1] * 25 + 1)
-#      for i, surface in enumerate(self.surfaces):
-#        pygame.draw.circle(surface, colors[i], wp_m, 12, 0)
-#        pygame.draw.circle(surface, (0, 0, 0), wp_m, 11, 0)
-      pygame.draw.circle(self.surface, (0, 255, 0), wp_m, 12, 0)
+      wp_m = (wp[0] * CELL_WIDTH + 1, wp[1] * CELL_WIDTH + 1)
+      pygame.draw.circle(self.surface, (0, 155, 0), wp_m, 12, 0)
       pygame.draw.circle(self.surface, (0, 0, 0), wp_m, 11, 0)
-#    for i, surface in enumerate(self.surfaces):
-#      pygame.draw.lines(surface, colors[i], False, map(mult, self.waypoints), 24)
-#      pygame.draw.lines(surface, (0, 0, 0), False, map(mult, self.waypoints), 22)
-    pygame.draw.lines(self.surface, (0, 255, 0), False, map(mult, self.waypoints), 24)
-    pygame.draw.lines(self.surface, (0, 0, 0), False, map(mult, self.waypoints), 22)
+    pygame.draw.lines(self.surface, (0, 155, 0), False, self.waypoints_scaled, 24)
+    pygame.draw.lines(self.surface, (0, 0, 0), False, self.waypoints_scaled, 22)
     self.surface.unlock()
     self.surface = self.surface.convert()
-#    self.surfaces = [surface.convert() for surface in self.surfaces]
-#    self.surface_red, self.surface_green, self.surface_blue = self.surfaces
-    Global.yume.log("A : " + str(time.time() - t1))
 
   def update(self):
-    pass
+    if self.last_update:
+      dt = time.time() - self.last_update
+
+      for mob in list(self.mobrenderer):
+        if mob.hp <= 0:
+          self.mobrenderer.remove(mob)
+          if mob.killer:
+            Global.yume.interface.mana += mob.worth
+
+      self.mobrenderer.update()
+
+      for wave in list(self.active_waves):
+        if wave.monster_queue:
+          wave.monster_tick -= dt
+          if wave.monster_tick < 0:
+            monster = wave.monster_queue.pop()
+            self.spawn(monster)
+            wave.monster_tick = wave.monster_delay 
+
+      self.delay -= dt
+      if self.waves and self.delay < 0:
+        wave = self.waves.popleft()
+        wave.engage()
+        self.active_waves.add(wave)
+        self.delay = wave.delay
+
+    self.last_update = time.time()
+
+  def spawn(self, monster):
+    mon = monster()
+    mon.x, mon.y = self.waypoints_scaled[0]
+    mon.waypoints = self.waypoints_scaled
+    self.mobrenderer.add(mon)
 
   def draw(self, screen):
     screen.blit(self.surface, (ARENA_LEFT_POS, ARENA_TOP_POS))
-#    screen.blit(self.surface_red, (ARENA_LEFT_POS, ARENA_TOP_POS))
-#    screen.blit(self.surface_green, (ARENA_LEFT_POS, ARENA_TOP_POS))
-#    screen.blit(self.surface_blue, (ARENA_LEFT_POS, ARENA_TOP_POS))
+    self.mobsurface.fill((0, 0, 0))
+    self.mobrenderer.draw(self.mobsurface)
+    screen.blit(self.mobsurface, (ARENA_LEFT_POS, ARENA_TOP_POS))
 
   def draw_above(self, screen):
     pass
+
+class LevelInvocation(Level):
+  def __init__(self):
+    Level.__init__(self)
+    self.waypoints = [(10, 0), (10, 4), (3, 4), (3, 8), (12, 8), (12, 16),
+        (6, 16), (6, 21), (18, 21), (18, 8), (32, 8)]
+    self.waves = deque([])
+    self.waves.append(Wave({Lame: 5}, mps=1, delay=3))
+    self.waves.append(Wave({Lame: 10}, mps=10, delay=2))
+    self.waves.append(Wave({Lame: 30}, mps=60, delay=2))
+
+class Wave(object):
+  def __init__(self, monsters, mps, delay):
+    self.monsters = monsters
+    self.mps = mps  # monsters per second
+    self.delay = delay
+
+  def engage(self):
+    add = lambda x, y: x + y
+    self.monster_queue = reduce(add,
+        [[cls] * n for cls, n in self.monsters.items()])
+    random.shuffle(self.monster_queue)
+    self.monster_delay = 1 / float(self.mps)
+    self.monster_tick = 0
 
 class Arena(object):
   def __init__(self):
@@ -218,7 +340,7 @@ class Arena(object):
     self.rect = pygame.Rect(ARENA_LEFT_POS, ARENA_TOP_POS,
         ARENA_LEFT_POS + ARENA_WIDTH, ARENA_TOP_POS + ARENA_HEIGHT)
     self.renderer = pygame.sprite.RenderPlain([])
-    self.level = Level()
+    self.level = LevelInvocation()
     self.level.initialize()
 
   def release(self, obj, pos):
@@ -278,7 +400,6 @@ class Yume(object):
 #    for i in range(10):
 #      lame = Lame()
 #      moblist.append(lame)
-    mobs = pygame.sprite.RenderPlain(moblist)
 
     clock = pygame.time.Clock()
     i = 0
@@ -309,8 +430,4 @@ class Yume(object):
       self.screen.fill((0, 0, 0))
       self.interface.update()
       self.interface.draw(self.screen)
-      mobs.update()
-      mobs.draw(self.screen)
       pygame.display.flip()
-      if i == 0:
-        self.log("B : " + str(time.time() - t1))
