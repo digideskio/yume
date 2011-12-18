@@ -86,6 +86,7 @@ class TowerPrototype(Tower):
     self.special_hits = 0
     self.phase = 0
     self.freq = 0
+    self.freq2 = 0
 
   def update(self):
     if self.cooldown_tick > 0:
@@ -95,12 +96,20 @@ class TowerPrototype(Tower):
     if self.cooldown_tick <= 0:
       x, y = self.rect.center
       if self.special_hits <= 0 and random.random() <= self.special_chance:
+        monsters = list(Global.face.get_monsters_in_range(x, y, self.range))
+        if len(monsters) >= 1:
+          monster = monsters[0]
+          x, y = monster.rect.center
+          a, b = self.rect.center
+          self.phase = atan2(y - b, x - a) - pi / 2
+        else:
+          self.phase = random.random() * pi * 2
         self.special_hits = random.randint(30,90)
-        self.phase = random.random() * pi * 2
         self.freq = pi / random.randint(1, 30)
+        self.freq2 = pi * random.random() * 2
       if self.special_hits > 0:
         for i in range(3):
-          self.phase += self.freq
+          self.phase += self.freq * sin(self.freq2 * self.special_hits)
           self.shoot((x + self.range * sin(self.phase), y + self.range * cos(self.phase)))
           self.special_hits -= 1
         self.cooldown_tick = 1
