@@ -24,6 +24,12 @@ class Images(object):
     sprite.rect = sprite.image.get_rect()
     return sprite
 
+  def make_dirty_sprite(self, name):
+    sprite = pygame.sprite.DirtySprite()
+    sprite.image = self.load(name)
+    sprite.rect = sprite.image.get_rect()
+    return sprite
+
   def load_image(self, name, colorkey=None):
     fullname = os.path.join(os.path.dirname(__file__), 'graphics', name)
     try:
@@ -51,11 +57,13 @@ class Interface(object):
     self.bottom2 = Bottom()
     self.bottom3 = Bottom()
     self.manabar = Global.images.make_sprite('mana.png')
+    self.costbar = Global.images.make_sprite('cost.png')
     self.menubar = Global.images.make_sprite('menu.png')
     self.wave_marker = pygame.Surface((30, ARENA_HEIGHT))
-    self.container = [self.bottom1, self.bottom2, self.bottom3, self.manabar,
-        self.menubar]
-    self.renderer = pygame.sprite.RenderPlain(self.container)
+    self.renderer = pygame.sprite.RenderPlain([self.bottom1, self.bottom2,
+      self.bottom3, self.manabar,
+        self.menubar])
+    self.renderer2 = pygame.sprite.RenderPlain([])
     self.last_update = time.time()
     self.font = pygame.font.Font(None, 20)
 
@@ -93,11 +101,17 @@ class Interface(object):
     if abs(diff) > 2:
       manapos += diff * 0.80
     self.manabar.rect.topleft = manapos, 2
+    if self.dragging:
+      pos = self.costbar.rect.width / self.mana_max * self.dragging.cost - self.costbar.rect.width
+      self.costbar.rect.topleft = pos, 2
+
     self.menubar.rect.topright = w, 0
     self.arena.update()
     self.arena.draw(screen)
     self.renderer.update()
+    self.renderer2.update()
     self.renderer.draw(screen)
+    self.renderer2.draw(screen)
     x, y = 0, SCREEN_HEIGHT
     color = 255
     for text in Global.yume.log_entries:
@@ -129,16 +143,20 @@ class Interface(object):
 
   def undrag(self):
     self.dragging = None
-    self.renderer.remove(self.dragging_sprite)
+    self.renderer2.remove(self.dragging_sprite)
+    self.renderer2.remove(self.costbar)
 
   def press(self, key):
     if key == K_1:
       self.drag(TowerPrototype)
+    if key == K_SPACE:
+      self.arena.delay = min(1, self.arena.delay)
 
   def drag(self, obj):
     self.dragging_sprite.change_image(Global.images.load(obj.imagefile))
-    self.renderer.add(self.dragging_sprite)
     self.dragging = obj
+    self.renderer2.add(self.dragging_sprite)
+    self.renderer2.add(self.costbar)
 
 class Arena(object):
   def __init__(self):

@@ -9,6 +9,7 @@ class Monster(pygame.sprite.Sprite):
   speed = 1
   def __init__(self):
     pygame.sprite.Sprite.__init__(self)
+    self.stagger = 0
     self.waypoint_index = 1
     self.waypoints = [(0, 0)]
     self.calc_vector = True
@@ -25,6 +26,9 @@ class Monster(pygame.sprite.Sprite):
       Global.yume.interface.crash()
       self.die()
     else:
+      if self.stagger > 0:
+        self.stagger -= 1
+        return
       x = waypoint[0] - self.x
       y = waypoint[1] - self.y
       if self.calc_vector:
@@ -49,11 +53,12 @@ class Monster(pygame.sprite.Sprite):
   def damage(self, damage, dealer):
     if self.hp > 0:
       self.hp -= damage
+      self.stagger = max(10, self.stagger)
       if self.hp <= 0:
         self.killer = dealer
 
 class Lame(Monster):
-  worth = 1
+  worth = .1
   def __init__(self):
     Monster.__init__(self)
     self.image = Global.images.load('enemy-1-pain.png')

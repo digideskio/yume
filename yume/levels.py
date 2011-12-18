@@ -55,10 +55,10 @@ class LevelInvocation(Level):
     self.waypoints = [(10, 0), (10, 4), (3, 4), (3, 8), (12, 8), (12, 16),
         (6, 16), (6, 21), (18, 21), (18, 8), (32, 8)]
     self.waves = deque()
-    self.waves.append(Wave({Lame: 100}, mps=5, delay=5))
-    self.waves.append(Wave({Lame: 20}, mps=100, delay=5))
-    self.waves.append(Wave({Lame: 10}, mps=10, delay=5))
-    self.waves.append(Wave({Lame: 30}, mps=20, delay=5))
-    self.waves.append(Wave({Lame: 40}, mps=20, delay=5))
-    self.waves.append(Wave({Lame: 30}, mps=60, delay=5))
-    self.waves.append(Wave({Lame: 100}, mps=5, delay=5))
+    self.waves.append(Wave({Lame: 5}, mps=1, delay=15))
+    self.waves.append(Wave({Lame: 20}, mps=100, delay=10))
+    self.waves.append(Wave({Lame: 10}, mps=10, delay=8))
+    self.waves.append(Wave({Lame: 30}, mps=20, delay=15))
+    self.waves.append(Wave({Lame: 40}, mps=20, delay=15))
+    self.waves.append(Wave({Lame: 30}, mps=60, delay=15))
+    self.waves.append(Wave({Lame: 100}, mps=5, delay=15))

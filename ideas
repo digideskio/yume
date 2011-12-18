@@ -2,4 +2,17 @@ a tower that always shoots in every direction, but the range in a
 particular direction is dependent on the number of monsters in that
 direction
 
+Towers:
+- Prototype: jack-of-all-trades standard turret
+- spider-turret that throws webs
+- UFO-like, moveable, shoots lazors that gain strength the longer it shoots
+- lazor,
+- crystal ball, higher radius when the player has more mana, slows enemies
+  down, prevents damage to own towers, splits the light of lazors into
+  multiple wavelengths for spread damage
 
+Spells:
+- Fire: Damages towers and enemies in a given radius
+- Water: Slows enemies down
+- Air: Pushes flying enemies away
+- Earth: Heals towers
