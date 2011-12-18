@@ -1,5 +1,5 @@
 #!/usr/bin/python
 # Yume Tower Defense
 
-import yume
-raise SystemExit(yume.main())
+import yume.core
+raise SystemExit(yume.core.main())
