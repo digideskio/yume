@@ -39,6 +39,7 @@ class Yume(object):
     pygame.display.set_caption('Yume Tower Defense')
 
     self.interface = Interface()
+    Global.face = self.interface
 
     clock = pygame.time.Clock()
     i = 0
@@ -61,8 +62,7 @@ class Yume(object):
           else:
             self.interface.press(event.key)
         elif event.type == MOUSEBUTTONDOWN:
-          if event.button == 1:
-            self.interface.click(event.pos, event.button)
+          self.interface.click(event.pos, event.button)
         elif event.type is MOUSEBUTTONUP:
           pass
 

@@ -4,16 +4,16 @@ from math import *
 from yume import *
 
 class Monster(pygame.sprite.Sprite):
+  worth = 4
+  hp = 10
+  speed = 1
   def __init__(self):
     pygame.sprite.Sprite.__init__(self)
     self.waypoint_index = 1
     self.waypoints = [(0, 0)]
-    self.hp = 10
-    self.worth = 4
     self.calc_vector = True
     self.vector_y = 0
     self.vector_x = 0
-    self.speed = 1
     self.killer = None
 
   def walk(self):
@@ -53,6 +53,7 @@ class Monster(pygame.sprite.Sprite):
         self.killer = dealer
 
 class Lame(Monster):
+  worth = 1
   def __init__(self):
     Monster.__init__(self)
     self.image = Global.images.load('enemy-1-pain.png')
