@@ -9,6 +9,7 @@ from optparse import OptionParser
 from math import *
 from yume.levels import *
 from yume.towers import *
+from yume.resource import *
 from yume.monsters import *
 from yume import *
 
@@ -24,9 +25,7 @@ def main():
 
 class Yume(object):
   def __init__(self):
-    from yume.interface import Images
     Global.yume = self
-    Global.images = Images()
     self.log_entries = deque(maxlen=10)
 
   def log(self, text):

@@ -2,47 +2,11 @@ import os
 import pygame
 import time
 from pygame.locals import *
+from yume.resource import *
 from yume.levels import *
 from yume.towers import *
 from yume import *
-
-class Images(object):
-  def __init__(self):
-    self._db = {}
-
-  def load(self, name):
-    if name in self._db:
-      return self._db[name]
-    else:
-      image = self.load_image(name)
-      self._db[name] = image
-      return image
-
-  def make_sprite(self, name):
-    sprite = pygame.sprite.Sprite()
-    sprite.image = self.load(name)
-    sprite.rect = sprite.image.get_rect()
-    return sprite
-
-  def make_dirty_sprite(self, name):
-    sprite = pygame.sprite.DirtySprite()
-    sprite.image = self.load(name)
-    sprite.rect = sprite.image.get_rect()
-    return sprite
-
-  def load_image(self, name, colorkey=None):
-    fullname = os.path.join(os.path.dirname(__file__), 'graphics', name)
-    try:
-      image = pygame.image.load(fullname)
-    except pygame.error, message:
-      print('Cannot load image:', fullname)
-      raise SystemExit, message
-    image = image.convert_alpha()
-    if colorkey is not None:
-      if colorkey is -1:
-        colorkey = image.get_at((0,0))
-        image.set_colorkey(colorkey, RLEACCEL)
-    return image
+from yume import gfx
 
 class Interface(object):
   def __init__(self):
@@ -56,16 +20,17 @@ class Interface(object):
     self.bottom1 = Bottom()
     self.bottom2 = Bottom()
     self.bottom3 = Bottom()
-    self.manabar = Global.images.make_sprite('mana.png')
-    self.costbar = Global.images.make_sprite('cost.png')
-    self.menubar = Global.images.make_sprite('menu.png')
+    self.costbar = get_sprite('cost.png', dirty=True)
+    self.menubar = get_sprite('menu.png', dirty=True)
     self.wave_marker = pygame.Surface((30, ARENA_HEIGHT))
     self.renderer = pygame.sprite.RenderPlain([self.bottom1, self.bottom2,
-      self.bottom3, self.manabar,
-        self.menubar])
+      self.bottom3, self.menubar])
     self.renderer2 = pygame.sprite.RenderPlain([])
     self.last_update = time.time()
-    self.font = pygame.font.Font(None, 20)
+    self.font = get_font()
+
+    self.manabar = get_gfx(gfx.ManaBar, (1, ))
+    self.manabar_x = -self.manabar.width
 
   def update(self):
     dt = time.time() - self.last_update
@@ -95,12 +60,16 @@ class Interface(object):
     self.bottom1.rect.bottomleft = 0, h
     self.bottom2.rect.bottomleft = 500, h
     self.bottom3.rect.bottomleft = 1000, h
-    manapos = self.manabar.rect.width / self.mana_max * self.mana - self.manabar.rect.width
-    current_manapos = self.manabar.rect.x
+
+    manapos = self.manabar.width / self.mana_max * self.mana - self.manabar.width
+    current_manapos = self.manabar_x
     diff = current_manapos - manapos
     if abs(diff) > 2:
       manapos += diff * 0.80
-    self.manabar.rect.topleft = manapos, 2
+    self.manabar_x = manapos
+    screen.blit(self.manabar.surface, (manapos, 2))
+    self.manabar.next_frame()
+
     if self.dragging:
       pos = self.costbar.rect.width / self.mana_max * self.dragging.cost - self.costbar.rect.width
       self.costbar.rect.topleft = pos, 2
@@ -137,7 +106,7 @@ class Interface(object):
               self.mana -= self.dragging.cost
               self.undrag()
           else:
-            Global.yume.log("Not enough mana!" + str(random.randint(1,10)))
+            Global.yume.log("Not enough mana!")
     if self.dragging:
       self.undrag()
 
@@ -153,7 +122,7 @@ class Interface(object):
       self.arena.delay = min(1, self.arena.delay)
 
   def drag(self, obj):
-    self.dragging_sprite.change_image(Global.images.load(obj.imagefile))
+    self.dragging_sprite.change_image(load_image(obj.imagefile))
     self.dragging = obj
     self.renderer2.add(self.dragging_sprite)
     self.renderer2.add(self.costbar)
@@ -253,5 +222,5 @@ class Dragger(pygame.sprite.Sprite):
 class Bottom(pygame.sprite.Sprite):
   def __init__(self):
     pygame.sprite.Sprite.__init__(self)
-    self.image = Global.images.load('foot.png')
+    self.image = load_image('foot.png')
     self.rect = self.image.get_rect()

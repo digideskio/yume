@@ -2,6 +2,8 @@ a tower that always shoots in every direction, but the range in a
 particular direction is dependent on the number of monsters in that
 direction
 
+an upgrade button
+
 Towers:
 - Prototype: jack-of-all-trades standard turret
 - spider-turret that throws webs
@@ -16,3 +18,13 @@ Spells:
 - Water: Slows enemies down
 - Air: Pushes flying enemies away
 - Earth: Heals towers
+
+Items:
+- Adrenaline Pills: Maximizes Adrenaline Baseline for 3 minutes, then lowers it
+  to zero
+- Mana Potions: Increases Mana Regeneration for 2 minutes and halves the mana
+  spent on spells
+- Painkillers: Reduces Adrenaline over time, reduces impact of monsters on
+  adrenaline and reduces mana regeneration for 1 minute
+
+Dream Over instead of Game Over

@@ -2,13 +2,14 @@ import pygame
 import random
 from math import *
 from yume import *
+from yume.resource import *
 
-class Monster(pygame.sprite.Sprite):
+class Monster(pygame.sprite.DirtySprite):
   worth = 4
   hp = 10
   speed = 1
   def __init__(self):
-    pygame.sprite.Sprite.__init__(self)
+    pygame.sprite.DirtySprite.__init__(self)
     self.stagger = 0
     self.waypoint_index = 1
     self.waypoints = [(0, 0)]
@@ -58,10 +59,10 @@ class Monster(pygame.sprite.Sprite):
         self.killer = dealer
 
 class Lame(Monster):
-  worth = .1
+  worth = .5
   def __init__(self):
     Monster.__init__(self)
-    self.image = Global.images.load('enemy-1-pain.png')
+    self.image = load_image('enemy-1-pain.png')
     self.rect = self.image.get_rect()
     self.x = random.randint(100, 800)
     self.y = random.randint(50, 800)

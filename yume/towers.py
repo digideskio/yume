@@ -2,10 +2,12 @@ import pygame
 import random
 from math import *
 from yume import *
+from yume import gfx
+from yume.resource import *
 
-class Tower(pygame.sprite.Sprite):
+class Tower(pygame.sprite.DirtySprite):
   def __init__(self):
-    pygame.sprite.Sprite.__init__(self)
+    pygame.sprite.DirtySprite.__init__(self)
 
   def move(self, x, y):
     self.rect.center = x, y
@@ -19,6 +21,10 @@ class Projectile(object):
     self.origin = origin
     self.target = target
     self.x, self.y = origin.rect.topleft
+
+  def draw(self, screen):
+    screen.blit(self.gfx.surface, (self.x, self.y))
+    self.gfx.next_frame()
 
   def destroy(self):
     try:
@@ -42,14 +48,12 @@ class ProjectileBullet(Projectile):
     else:
       self.tx, self.ty = target
     direction = atan2(self.ty - self.y, self.tx - self.x)
+    self.gfx = get_gfx(gfx.Bullet, (1, 1))
     self.dx = cos(direction) * self.speed
     self.dy = sin(direction) * self.speed
     self.damage = origin.damage
     self.distance = origin.range / self.speed
-    self.traveled_distance = 0
-
-  def draw(self, screen):
-    pygame.draw.line(screen, (205, 100, 255), (self.x, self.y), (self.x+1, self.y+1))
+    self.traveled_distance = random.randint(0, 5)
 
   def update(self):
     self.x += self.dx
@@ -70,17 +74,17 @@ class ProjectileBullet(Projectile):
 class TowerPrototype(Tower):
   imagefile = 'turret-1-1.png'
   cost = 28
-  cooldown = 15
-  cooldown_min = 4
+  cooldown = 20
+  cooldown_min = 10
   cooldown_step = 1
   range = 100
   damage = 4
-  special_chance = 0.1
+  special_chance = 0.03
   projectile = ProjectileBullet
 
   def __init__(self):
     Tower.__init__(self)
-    self.image = Global.images.load(self.imagefile)
+    self.image = load_image(self.imagefile)
     self.rect = self.image.get_rect()
     self.cooldown_tick = 0
     self.special_hits = 0
