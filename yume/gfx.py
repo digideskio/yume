@@ -19,7 +19,7 @@ def draw_gfx(cls, args):
     surface = pygame.Surface((gfx.width, gfx.height))
     surface.set_colorkey((0, 0, 0))
     gfx.draw_frame(surface, i)
-    surfaces.append(surface)
+    surfaces.append(surface.convert_alpha())
   gfx.surfaces = surfaces
   gfx.surface = surfaces[gfx.current_frame]
   return gfx
@@ -36,6 +36,19 @@ class Bullet(GFX):
   def draw_frame(self, surface, n):
     line(surface, (205, 100, 255), (2, 2), self.foo[n])
 
+class TowerTurretGFX(GFX):
+  height = 25
+  width = 25
+
+  def __init__(self, args):
+    self.scale, self.rotation, self.recoil = args
+    self.height = int(self.height * self.scale)
+    self.width = int(self.width * self.scale)
+
+  def draw_frame(self, surface, n):
+    s = self.scale
+    ellipse(surface, (100, 200, 0), Rect(2*s, 2*s, 22*s, 10*s))
+#    surface.set_alpha(100)
 
 class ManaBar(GFX):
   width = base_width = SCREEN_WIDTH

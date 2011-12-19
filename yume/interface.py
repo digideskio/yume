@@ -10,11 +10,11 @@ from yume import gfx
 
 class Interface(object):
   def __init__(self):
-    self.mana_max = 100.0
-    self.mana = self.mana_max
+    self.mana_max = 300.0
+    self.mana = 100.0
     self.mana_regen = 0.1
     self.dragging = None
-    self.dragging_sprite = Dragger()
+    self.dragged_surface = None
     self.arena = Arena()
     Global.arena = self.arena
     self.bottom1 = Bottom()
@@ -81,6 +81,8 @@ class Interface(object):
     self.renderer2.update()
     self.renderer.draw(screen)
     self.renderer2.draw(screen)
+    if self.dragged_surface:
+      screen.blit(self.dragged_surface, pygame.mouse.get_pos())
     x, y = 0, SCREEN_HEIGHT
     color = 255
     for text in Global.yume.log_entries:
@@ -112,7 +114,6 @@ class Interface(object):
 
   def undrag(self):
     self.dragging = None
-    self.renderer2.remove(self.dragging_sprite)
     self.renderer2.remove(self.costbar)
 
   def press(self, key):
@@ -122,9 +123,8 @@ class Interface(object):
       self.arena.delay = min(1, self.arena.delay)
 
   def drag(self, obj):
-    self.dragging_sprite.change_image(load_image(obj.imagefile))
     self.dragging = obj
-    self.renderer2.add(self.dragging_sprite)
+    self.dragged_surface = get_gfx(obj.gfx, (0, 0, 0)).surface
     self.renderer2.add(self.costbar)
 
 class Arena(object):
@@ -207,17 +207,6 @@ class Arena(object):
     mon.x, mon.y = self.level.waypoints_scaled[0]
     mon.waypoints = self.level.waypoints_scaled
     self.mobrenderer.add(mon)
-
-class Dragger(pygame.sprite.Sprite):
-  def __init__(self):
-    pygame.sprite.Sprite.__init__(self)
-
-  def change_image(self, image):
-    self.image = image
-    self.rect = image.get_rect()
-
-  def update(self):
-    self.rect.center = pygame.mouse.get_pos()
 
 class Bottom(pygame.sprite.Sprite):
   def __init__(self):

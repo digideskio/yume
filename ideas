@@ -1,30 +1,99 @@
+Mana:
+  - Required to build towers
+  - Required to cast spells
+  - Slowly regenerates
+  - Can be recovered with Mana Potions
+  - Killing a monster regenerates more mana
+  - Certain towers are influenced by this stat
+  - How to increase maximum Mana?
+
+Adrenaline:
+  - Increased when enemies reach your base
+  - When adrenaline goes over the maximum, the player wakes up
+    and the dream is over
+  - Can be lowered with Pain Killers or increased with Adrenaline Pills
+  - Increases efficiency of certain towers
+  - Spells become more focused
+  - Slowly restored towards baseline
+  - The baseline is increased when building towers, to limit the number of
+    towers you can build
+  - Other things that raise adrenaline temporarily?
+
 a tower that always shoots in every direction, but the range in a
 particular direction is dependent on the number of monsters in that
 direction
 
-an upgrade button
+an upgrade key: hold it and click on something to upgrade it.
+an focused fire key: all towers (who can) will shoot in that direction when the
+key is pressed.
+
+Each tower has a level.  When killing a monster, it gains experience.
+
+global upgrades (techs) and local upgrades.  local ones "raise" the level of
+the turret and can also be obtained by killing enough monsters.  local upgrades
+should NEVER be bad, so they should increase something like damage.  global
+upgrades can be bad depending on the players strategy.
 
 Towers:
-- Prototype: jack-of-all-trades standard turret
-- spider-turret that throws webs
-- UFO-like, moveable, shoots lazors that gain strength the longer it shoots
-- lazor,
-- crystal ball, higher radius when the player has more mana, slows enemies
-  down, prevents damage to own towers, splits the light of lazors into
-  multiple wavelengths for spread damage
-
+- Turret:
+    o Shoots high speed projectiles at random enemies
+    + Attacks faster if more enemies are in range
+    + At a certain chance it can shoot salves of bullets
+    - overheats and explodes when they are too active
+- Spider:
+    + Shoots multiple beams that stay on one enemy
+    + Attacks slow enemies down
+    o High Adrenaline makes them switch targets
+- Lazor:
+    + Shoots one beam on varying enemies
+    o The beam doesn't jump, the tower has to turn to change targets
+    + Synergy with Crystal Ball
+    + Synergy with Molecules
+- UFO:
+    + Shoots one beam that stays on one enemy
+    + Beam grows stronger with time
+    + Beam causes an explosion when target is switched
+    + Drag & Droppable
+    + Synergy with other UFO's 
+- Crystal Ball:
+    o Has a radius of action rather than a projectile
+    + Higher Radius when the player has more mana
+    + Enemies in the radius are slowed down
+    + Towers in the radius recevie less damage
+    + Synergy with Lazors:  When they shoot the crystal ball, their
+      light is split up into multiple wavelengths for spread damage
+- Guardian/Mechanical Tower:
+    + Shoots slow projectiles at particular enemies
+    + Gains power when it doesn't shoot
+    - Powerful projectiles will have a long aftercast delay
+- Molecule:
+    - Does not attack normally
+    + Floats around
+    + Synergy with Lazors: They shoot at molecules, building up
+      their energy level until a high energy light beam is released
+    + Can be moved with the Air spell
+- Disruptor:
+    o Shoots at random monsters
+    + Successful hits will pause monsters for a short time
+    - Reduces efficiency of nearby towers
+    
 Spells:
 - Fire: Damages towers and enemies in a given radius
 - Water: Slows enemies down
-- Air: Pushes flying enemies away
+- Air: Pushes flying enemies or towers away
 - Earth: Heals towers
 
 Items:
-- Adrenaline Pills: Maximizes Adrenaline Baseline for 3 minutes, then lowers it
-  to zero
-- Mana Potions: Increases Mana Regeneration for 2 minutes and halves the mana
-  spent on spells
-- Painkillers: Reduces Adrenaline over time, reduces impact of monsters on
-  adrenaline and reduces mana regeneration for 1 minute
-
-Dream Over instead of Game Over
+- Adrenaline Pills:
+    Duration: 2 Minutes
+    o Fills Adrenaline Bar, so if a single monster gets through, you wake up
+    + After the effect wore off, lower Adrenaline to zero
+- Mana Potions:
+    Duratoin: 2 minutes
+    + Quadruples Mana Regeneration
+    + Halves the Mana spent on spells
+- Painkillers:
+    Duration: 1 minute
+    o Doubles Adrenaline reuptake
+    + Reduces impact of Monsters on Adrenaline
+    - Halves Mana regeneration
