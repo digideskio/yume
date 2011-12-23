@@ -34,6 +34,8 @@ the turret and can also be obtained by killing enough monsters.  local upgrades
 should NEVER be bad, so they should increase something like damage.  global
 upgrades can be bad depending on the players strategy.
 
+Monsters randomly drop powerups when die
+
 Towers:
 - Turret:
     o Shoots high speed projectiles at random enemies
