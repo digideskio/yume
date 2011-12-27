@@ -26,6 +26,7 @@ class Level(object):
 
   def initialize(self):
     self.surface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
+    self.surface.set_colorkey((0, 0, 0))
 
     def mult(pair):
       return (pair[0] * 25, pair[1] * 25)

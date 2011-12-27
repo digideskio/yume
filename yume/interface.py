@@ -143,6 +143,8 @@ class Arena(object):
         ARENA_LEFT_POS + ARENA_WIDTH, ARENA_TOP_POS + ARENA_HEIGHT)
     self.renderer = pygame.sprite.RenderPlain([])
 
+    self.background = get_gfx(gfx.Background, (1, 1))
+
     self.load_level(LevelInvocation)
 
   def load_level(self, cls):
@@ -205,6 +207,8 @@ class Arena(object):
     self.last_update = time.time()
 
   def draw(self, screen):
+    screen.blit(self.background.surface, (ARENA_LEFT_POS, ARENA_TOP_POS))
+    self.background.next_frame()
     self.level.draw(screen)
     self.creeplayer.fill((0, 0, 0))
     self.projectilelayer.fill((0, 0, 0))

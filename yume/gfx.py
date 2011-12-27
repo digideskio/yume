@@ -1,4 +1,5 @@
 import pygame
+import numpy
 from math import *
 from pygame import Rect
 from pygame.draw import *
@@ -118,10 +119,48 @@ class TowerTurretGFX(GFX):
     ellipse(surface, (100, 200, 0), Rect(2*s, 2*s, 22*s, 10*s))
 #    surface.set_alpha(100)
 
+class Background(GFX):
+  height = 600
+  width = 800
+  frames = 32
+
+  def __init__(self, args):
+    self.scale, _ = args
+    self.height = int(self.height * self.scale)
+    self.width = int(self.width * self.scale)
+
+  def draw_frame(self, surface, n):
+    for j in range(20):
+      points = []
+      for i in range(120):
+        points.append(((0 if i % 2 else 10) + j * 40, 5*i+n))
+      for i in range(120):
+        points.append(((0 if i % 2 else 10) + j * 40, 600-5*i+n+j))
+      polygon(surface, (155, 0, 0), points)
+#    line(surface, (255, 0, 0), (0, 0), (n * 10, 100))
+#    line(surface, (255, 0, 0), (0, 0), (n * 10, 100))
+
+  def draw_frame(self, surface, n):
+#    colormap = 
+#    ary = numpy.zeros((800, 600))
+    x, y = surface.get_size()
+    x /= 5
+    y /= 5
+    layer = pygame.Surface((x, y))
+    ary = numpy.zeros((160, 120))
+    for x in range(160):
+      for y in range(120):
+#        ary[x][y] = 1
+        ary[x][y] = (sin((x+y+n/4.0)*pi/2) + 1) * 32
+    pygame.surfarray.blit_array(layer, ary)
+    layer = pygame.transform.scale(layer, surface.get_size())
+    surface.blit(layer, (0, 0))
+#    pygame.surfarray.blit_array(surface, ary)
+
 class ManaBar(GFX):
   width = base_width = SCREEN_WIDTH
   height = 16
-  frames = 100
+  frames = 1
 
   def __init__(self, args):
     self.scale = args[0]
@@ -129,5 +168,15 @@ class ManaBar(GFX):
     self.height = 16
 
   def draw_frame(self, surface, n):
-    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
+    ary = numpy.zeros((self.width, self.height))
+    for x in range(self.width):
+      for y in range(self.height):
+        if y == 0 or y == self.height - 1:
+          ary[x][y] = 255
+        elif x > self.width - 50:
+          ary[x][y] = min(255, (sin((x/2+y)/2) + 1) * 96 + 64 + 3 * (x - self.width + 50))
+        else:
+          ary[x][y] = (sin((x/2+y)/2) + 1) * 96 + 64
+    pygame.surfarray.blit_array(surface, ary)
+#    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
 
