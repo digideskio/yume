@@ -122,7 +122,8 @@ class TowerTurretGFX(GFX):
 class Background(GFX):
   height = 600
   width = 800
-  frames = 32
+  frames = 8
+  compression = 20
 
   def __init__(self, args):
     self.scale, _ = args
@@ -144,14 +145,17 @@ class Background(GFX):
 #    colormap = 
 #    ary = numpy.zeros((800, 600))
     x, y = surface.get_size()
-    x /= 5
-    y /= 5
-    layer = pygame.Surface((x, y))
-    ary = numpy.zeros((160, 120))
-    for x in range(160):
-      for y in range(120):
+    xc = x / self.compression
+    yc = y / self.compression
+    layer = pygame.Surface((xc, yc))
+    ary = numpy.zeros((xc, yc))
+
+    offset1 = 1 / (self.frames / 4.0)
+    offset2 = pi/2.0
+    for x in range(xc):
+      for y in range(yc):
 #        ary[x][y] = 1
-        ary[x][y] = (sin((x+y+n/4.0)*pi/2) + 1) * 32
+        ary[x][y] = (sin((x+y+n*offset1)*offset2) + 1) * (cos((y*0.25+n*offset1)*offset2) + 1) * 8
     pygame.surfarray.blit_array(layer, ary)
     layer = pygame.transform.scale(layer, surface.get_size())
     surface.blit(layer, (0, 0))
@@ -179,4 +183,3 @@ class ManaBar(GFX):
           ary[x][y] = (sin((x/2+y)/2) + 1) * 96 + 64
     pygame.surfarray.blit_array(surface, ary)
 #    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
-
