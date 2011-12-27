@@ -1,8 +1,10 @@
 import os.path
 import pygame
 import random
+import re
 import sys
 import time
+import yume
 from collections import deque
 from pygame.locals import *
 from optparse import OptionParser
@@ -21,7 +23,9 @@ def main():
     print("Python %s not supported.  Need Python >=2.6 <3.0." % version)
     sys.exit(1)
 
-  return Yume().run()
+  yu = Yume()
+  yu.parse_args()
+  return yu.run()
 
 class Yume(object):
   def __init__(self):
@@ -31,10 +35,22 @@ class Yume(object):
   def log(self, text):
     self.log_entries.appendleft(text)
 
+  def parse_args(self):
+    p = OptionParser(usage="%prog [options]")
+    p.add_option('-r', '--resolution', type='string')
+    options, _ = p.parse_args()
+
+    if options.resolution:
+      match = re.match(r'(\d+)x(\d+)', options.resolution)
+      if match:
+        w, h = match.groups()
+        yume.SCREEN_WIDTH, yume.SCREEN_HEIGHT = int(w), int(h)
+
   def run(self):
     from yume.interface import Interface
-    self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT),
+    self.screen = pygame.display.set_mode((yume.SCREEN_WIDTH, yume.SCREEN_HEIGHT),
         pygame.SRCALPHA, 32)
+    self.layer = pygame.Surface((yume.ARENA_WIDTH, yume.ARENA_HEIGHT))
     pygame.display.set_caption('Yume Tower Defense')
 
     self.interface = Interface()
@@ -65,7 +81,12 @@ class Yume(object):
         elif event.type is MOUSEBUTTONUP:
           pass
 
-      self.screen.fill((0, 0, 0))
       self.interface.update()
-      self.interface.draw(self.screen)
+      if self.layer.get_size() != self.screen.get_size():
+        self.layer.fill((0, 0, 0))
+        self.interface.draw(self.layer)
+        pygame.transform.scale(self.layer, self.screen.get_size(), self.screen)
+      else:
+        self.screen.fill((0, 0, 0))
+        self.interface.draw(self.screen)
       pygame.display.flip()

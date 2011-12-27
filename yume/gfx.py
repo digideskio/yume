@@ -164,7 +164,7 @@ class Background(GFX):
 class ManaBar(GFX):
   width = base_width = SCREEN_WIDTH
   height = 16
-  frames = 1
+  frames = 32
 
   def __init__(self, args):
     self.scale = args[0]
@@ -177,9 +177,11 @@ class ManaBar(GFX):
       for y in range(self.height):
         if y == 0 or y == self.height - 1:
           ary[x][y] = 255
-        elif x > self.width - 50:
-          ary[x][y] = min(255, (sin((x/2+y)/2) + 1) * 96 + 64 + 3 * (x - self.width + 50))
         else:
-          ary[x][y] = (sin((x/2+y)/2) + 1) * 96 + 64
+          v = (sin((x/2+y+n/2.0)*pi/4) + 1) * 64 + 128
+          if x > self.width - 50:
+            ary[x][y] = min(255, (v + 3 * (x - self.width + 50)))
+          else:
+            ary[x][y] = min(255, v)
     pygame.surfarray.blit_array(surface, ary)
 #    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
