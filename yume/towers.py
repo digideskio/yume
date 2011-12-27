@@ -7,20 +7,23 @@ from yume import gfx
 from yume.resource import *
 from yume.projectiles import *
 
-class Tower(object):
+class Tower(gfx.Drawable):
   gfx = None
   def __init__(self):
-    self.rect = Rect(0, 0, 0, 0)
+    gfx.Drawable.__init__(self)
+    self.rect = Rect(0, 0, self.gfx.width, self.gfx.height)
 
   def move(self, x, y):
-    self.rect.center = x, y
+    self.x, self.y = x, y
+    self.rect.topleft = x, y
 
   def shoot(self, monster):
-    Global.arena.projectiles.add(self.projectile(self, monster))
+    Global.arena.projectiles.append(self.projectile(self, monster))
 
 
-class TowerPrototype(Tower):
-  gfx = gfx.TowerTurretGFX
+class TowerBubble(Tower):
+  graphic = gfx.TowerBubbleGFX
+#  gfx = gfx.TowerTurretGFX
   cost = 28
   cooldown = 20
   cooldown_min = 10
@@ -32,12 +35,14 @@ class TowerPrototype(Tower):
 
   def __init__(self):
     Tower.__init__(self)
-    self.rect = self.image.get_rect()
     self.cooldown_tick = 0
     self.special_hits = 0
     self.phase = 0
     self.freq = 0
     self.freq2 = 0
+
+  def draw(self, screen):
+    Tower.draw(self, screen)
 
   def update(self):
     if self.cooldown_tick > 0:

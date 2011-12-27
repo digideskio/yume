@@ -3,13 +3,17 @@ import random
 from math import *
 from yume import *
 from yume.resource import *
+from pygame import Rect
+from yume import gfx
 
-class Monster(pygame.sprite.DirtySprite):
+class Monster(gfx.Drawable):
   worth = 4
   hp = 10
   speed = 1
+  graphic = gfx.MonsterGFX
+
   def __init__(self):
-    pygame.sprite.DirtySprite.__init__(self)
+    gfx.Drawable.__init__(self)
     self.stagger = 0
     self.waypoint_index = 1
     self.waypoints = [(0, 0)]
@@ -60,13 +64,14 @@ class Monster(pygame.sprite.DirtySprite):
 
 class Lame(Monster):
   worth = .5
+
   def __init__(self):
     Monster.__init__(self)
-    self.image = load_image('enemy-1-pain.png')
-    self.rect = self.image.get_rect()
     self.x = random.randint(100, 800)
     self.y = random.randint(50, 800)
     self.t = random.randint(0, 20)
+    self.rect = Rect(self.x, self.y, self.gfx.width, self.gfx.height)
+    self.rect.center = self.x, self.y
 
   def update(self):
     self.walk()

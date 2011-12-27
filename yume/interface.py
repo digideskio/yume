@@ -2,7 +2,9 @@ import os
 import pygame
 import time
 from pygame.locals import *
+from pygame import Rect
 from yume.resource import *
+from yume.gfx import get_gfx
 from yume.levels import *
 from yume.towers import *
 from yume import *
@@ -44,7 +46,7 @@ class Interface(object):
     return sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
 
   def get_monsters_in_range(self, x1, y1, rnge):
-    for monster in self.arena.mobrenderer:
+    for monster in self.arena.creeps:
       x2, y2 = monster.rect.center
       if sqrt((x1-x2) ** 2 + (y1-y2) ** 2) < rnge:
         yield monster
@@ -81,7 +83,7 @@ class Interface(object):
     self.renderer2.update()
     self.renderer.draw(screen)
     self.renderer2.draw(screen)
-    if self.dragged_surface:
+    if self.dragging and self.dragged_surface:
       screen.blit(self.dragged_surface, pygame.mouse.get_pos())
     x, y = 0, SCREEN_HEIGHT
     color = 255
@@ -94,7 +96,7 @@ class Interface(object):
     for wave in self.arena.level.waves:
       if y > ARENA_HEIGHT:
         break
-      rect = pygame.Rect((0, y), (20, 20))
+      rect = Rect((0, y), (20, 20))
       pygame.draw.rect(screen, (100, 0, 100), rect)
       y += max(25, wave.delay * 10)
 
@@ -118,25 +120,29 @@ class Interface(object):
 
   def press(self, key):
     if key == K_1:
-      self.drag(TowerPrototype)
+      self.drag(TowerBubble)
     if key == K_SPACE:
       self.arena.delay = min(1, self.arena.delay)
 
   def drag(self, obj):
     self.dragging = obj
-    self.dragged_surface = get_gfx(obj.gfx, (0, 0, 0)).surface
+    self.dragged_surface = get_gfx(obj.graphic, (0, 0)).surface
     self.renderer2.add(self.costbar)
 
 class Arena(object):
   def __init__(self):
-    self.mobsurface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
-    self.mobsurface.set_colorkey((0, 0, 0))
-    self.mobsurface = self.mobsurface.convert()
-    self.mobrenderer = pygame.sprite.RenderPlain([])
-    self.projectiles = set()
-    self.rect = pygame.Rect(ARENA_LEFT_POS, ARENA_TOP_POS,
+    def makelayer():
+      layer = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
+      layer.set_colorkey((0, 0, 0))
+      return layer.convert()
+
+    self.creeplayer = makelayer()
+    self.projectilelayer = makelayer()
+
+    self.rect = Rect(ARENA_LEFT_POS, ARENA_TOP_POS,
         ARENA_LEFT_POS + ARENA_WIDTH, ARENA_TOP_POS + ARENA_HEIGHT)
     self.renderer = pygame.sprite.RenderPlain([])
+
     self.load_level(LevelInvocation)
 
   def load_level(self, cls):
@@ -146,32 +152,38 @@ class Arena(object):
     self.last_update = 0
     self.active_waves = set()
     self.delay = 1
-    self.towers = []
     self.cells = [[1] * CELLS_X for _ in range(CELLS_Y)]
+
+    self.creeps = list()
+    self.projectiles = list()
+    self.towers = list()
 
   def release(self, obj, pos):
     if issubclass(obj, Tower):
+      pos = (pos[0] - ARENA_LEFT_POS, pos[1] - ARENA_TOP_POS)
       self.createTower(obj, pos)
       return True
 
   def createTower(self, cls, pos):
     tower = cls()
     tower.move(*pos)
-    self.towers.append(cls())
-    self.renderer.add(tower)
+    self.towers.append(tower)
 
   def update(self):
     self.renderer.update()
     if self.last_update:
       dt = time.time() - self.last_update
 
-      for mob in list(self.mobrenderer):
+      for mob in list(self.creeps):
         if mob.hp <= 0:
-          self.mobrenderer.remove(mob)
+          self.creeps.remove(mob)
           if mob.killer:
             Global.yume.interface.mana += mob.worth
+        mob.update()
 
-      self.mobrenderer.update()
+      for tower in list(self.towers):
+        tower.update()
+
       for projectile in list(self.projectiles):
         projectile.update()
 
@@ -194,11 +206,16 @@ class Arena(object):
 
   def draw(self, screen):
     self.level.draw(screen)
-    self.mobsurface.fill((0, 0, 0))
-    self.mobrenderer.draw(self.mobsurface)
+    self.creeplayer.fill((0, 0, 0))
+    self.projectilelayer.fill((0, 0, 0))
+    for creep in self.creeps:
+      creep.draw(self.creeplayer)
+    for tower in list(self.towers):
+      tower.draw(self.projectilelayer)
     for projectile in self.projectiles:
-      projectile.draw(self.mobsurface)
-    screen.blit(self.mobsurface, (ARENA_LEFT_POS, ARENA_TOP_POS))
+      projectile.draw(self.projectilelayer)
+    screen.blit(self.creeplayer, (ARENA_LEFT_POS, ARENA_TOP_POS))
+    screen.blit(self.projectilelayer, (ARENA_LEFT_POS, ARENA_TOP_POS))
     self.renderer.draw(screen)
     self.level.draw_above(screen)
 
@@ -206,7 +223,7 @@ class Arena(object):
     mon = monster()
     mon.x, mon.y = self.level.waypoints_scaled[0]
     mon.waypoints = self.level.waypoints_scaled
-    self.mobrenderer.add(mon)
+    self.creeps.append(mon)
 
 class Bottom(pygame.sprite.Sprite):
   def __init__(self):

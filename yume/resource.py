@@ -1,26 +1,16 @@
 import pygame
 import os
-from yume.gfx import draw_gfx
 
 FONT_NAME = None
 FONT_SIZE = 20
 
 _font_cache = {}
 _image_cache = {}
-_gfx_cache = {}
 
 def get_font(size=FONT_SIZE):
   if size not in _font_cache:
     _font_cache[size] = pygame.font.Font(FONT_NAME, size)
   return _font_cache[size]
-
-def get_gfx(name, args):
-  key = (name, args)
-  if key not in _gfx_cache:
-    result = draw_gfx(name, args)
-    _gfx_cache[key] = result
-    return result
-  return _gfx_cache[key]
 
 def load_image(name):
   if name in _image_cache:

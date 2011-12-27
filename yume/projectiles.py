@@ -3,13 +3,15 @@ import random
 from math import *
 from yume import *
 from yume import gfx
+from yume.gfx import get_gfx
 from yume.resource import *
 
-class Projectile(object):
+class Projectile(gfx.Drawable):
   def __init__(self, origin, target):
+    gfx.Drawable.__init__(self)
     self.origin = origin
     self.target = target
-    self.x, self.y = origin.rect.topleft
+    self.x, self.y = origin.rect.center
 
   def draw(self, screen):
     screen.blit(self.gfx.surface, (self.x, self.y))
@@ -26,6 +28,7 @@ class ProjectileBullet(Projectile):
   aoe = 7
   hits = 1
   speed = 2
+  graphic = gfx.Bubble
 
   def __init__(self, origin, target):
     Projectile.__init__(self, origin, target)
@@ -37,7 +40,7 @@ class ProjectileBullet(Projectile):
     else:
       self.tx, self.ty = target
     direction = atan2(self.ty - self.y, self.tx - self.x)
-    self.gfx = get_gfx(gfx.Bullet, (1, 1))
+#    self.gfx = get_gfx(gfx.B, (1, 1))
     self.dx = cos(direction) * self.speed
     self.dy = sin(direction) * self.speed
     self.damage = origin.damage
