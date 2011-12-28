@@ -25,30 +25,24 @@ class Monster(gfx.Drawable):
   def walk(self):
     if self.hp <= 0:
       return
-    try:
-      waypoint = self.waypoints[self.waypoint_index]
-    except:
+    brain_pos = Global.arena.brain_pos
+    if self.stagger > 0:
+      self.stagger -= 1
+      return
+    x = brain_pos[0] - self.x
+    y = brain_pos[1] - self.y
+    if self.calc_vector:
+      rotation = atan2(y, x)
+      self.vector_x = cos(rotation)
+      self.vector_y = sin(rotation)
+      self.calc_vector = False
+    distance = sqrt(x*x+y*y)
+    if distance < 10:
       Global.yume.interface.crash()
       self.die()
     else:
-      if self.stagger > 0:
-        self.stagger -= 1
-        return
-      x = waypoint[0] - self.x
-      y = waypoint[1] - self.y
-      if self.calc_vector:
-        rotation = atan2(y, x)
-        self.vector_x = cos(rotation)
-        self.vector_y = sin(rotation)
-        self.calc_vector = False
-      distance = sqrt(x*x+y*y)
-      if distance < 10:
-        self.waypoint_index += 1
-        self.calc_vector = True
-      else:
-        self.t += pi / 20
-        self.x += self.vector_x * self.speed
-        self.y += self.vector_y * self.speed
+      self.x += self.vector_x * self.speed
+      self.y += self.vector_y * self.speed
 
     self.rect.center = (self.x, self.y)
 
@@ -61,6 +55,24 @@ class Monster(gfx.Drawable):
       self.stagger = max(10, self.stagger)
       if self.hp <= 0:
         self.killer = dealer
+
+class GeneMonster(Monster):
+  graphic = gfx.MonsterGFX
+
+  def __init__(self, gene, arena):
+    r = arena.rect
+    Monster.__init__(self)
+    self.hp = (gene.count('a') + 1) * 10
+    self.speed = 1
+    worth = log(len(gene) + 2)
+
+    if (gene.count('b') / 2) % 2:
+      self.x, self.y = r.midleft
+    else:
+      self.x, self.y = r.midright
+
+  def update(self):
+    self.walk()
 
 class Lame(Monster):
   worth = 1.0

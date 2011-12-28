@@ -99,13 +99,13 @@ class Interface(object):
       text = self.font.render(text, 1, (color, color, color))
       color -= 24
       screen.blit(text, (x, y))
-    y = ARENA_TOP_POS + self.arena.delay * 10
-    for wave in self.arena.level.waves:
-      if y > ARENA_HEIGHT:
-        break
-      rect = Rect((0, y), (20, 20))
-      pygame.draw.rect(screen, (100, 0, 100), rect)
-      y += max(25, wave.delay * 10)
+#    y = ARENA_TOP_POS + self.arena.delay * 10
+#    for wave in self.arena.level.waves:
+#      if y > ARENA_HEIGHT:
+#        break
+#      rect = Rect((0, y), (20, 20))
+#      pygame.draw.rect(screen, (100, 0, 100), rect)
+#      y += max(25, wave.delay * 10)
 
   def click(self, pos, button):
     if button == 1:
@@ -128,7 +128,7 @@ class Interface(object):
     if key == K_1:
       self.drag(TowerBubble)
     if key == K_0:
-      if not self.arena.brain_exists:
+      if not self.arena.brain_pos:
         self.drag(TowerBrain)
     if key == K_SPACE:
       self.arena.delay = min(1, self.arena.delay)
@@ -146,7 +146,7 @@ class Arena(object):
     self.background = get_gfx(gfx.Background, (1, 1))
     self.grid = make_grid((100, 0, 0))
 
-    self.load_level(LevelInvocation)
+    self.load_level(Level)
 
   def pos_to_cell(self, x, y):
     x = int((x + ARENA_LEFT_POS) / 25) * 25 - ARENA_LEFT_POS + 1
@@ -155,17 +155,17 @@ class Arena(object):
 
   def load_level(self, cls):
     self.level = cls()
-    self.level.initialize()
     Global.level = self.level
     self.last_update = 0
-    self.active_waves = set()
     self.delay = 1
+    self.monster_timer = 0
     self.tower_positions = dict()
 
     self.creeps = list()
     self.projectiles = list()
     self.towers = list()
-    self.brain_exists = False
+    self.brain_pos = None
+    self.monsters_left = set()
     Global.yume.log("Press 0 and place your brain to start the game")
 
   def release(self, obj, pos):
@@ -184,12 +184,12 @@ class Arena(object):
     tower.move(*pos)
     self.towers.append(tower)
     if cls == TowerBrain:
-      self.brain_exists = True
+      self.brain_pos = pos
     return tower
 
   def update(self):
     self.renderer.update()
-    if self.last_update and self.brain_exists:
+    if self.last_update and self.brain_pos:
       dt = time.time() - self.last_update
 
       for mob in list(self.creeps):
@@ -205,20 +205,18 @@ class Arena(object):
       for projectile in list(self.projectiles):
         projectile.update()
 
-      for wave in list(self.active_waves):
-        if wave.monster_queue:
-          wave.monster_tick -= dt
-          if wave.monster_tick < 0:
-            monster = wave.monster_queue.pop()
-            self.spawn(monster)
-            wave.monster_tick = wave.monster_delay 
-
-      self.delay -= dt
-      if self.level.waves and self.delay < 0:
-        wave = self.level.waves.popleft()
-        wave.engage()
-        self.active_waves.add(wave)
-        self.delay = wave.delay
+      if self.monster_timer > 0:
+        self.monster_timer -= dt
+      elif self.monsters_left:
+        Global.yume.log("Monsters Left: %d" % len(self.monsters_left))
+        monster = GeneMonster(self.monsters_left.pop(), self)
+        self.spawn(monster)
+        self.monster_timer = 0.5
+      else:
+        Global.yume.log("Gene: %s" % self.level.gene)
+        self.monster_timer = 3
+        self.monsters_left = self.level.get_monsters()
+        self.level.mutate()
 
     self.last_update = time.time()
 
@@ -233,10 +231,6 @@ class Arena(object):
       tower.draw(screen)
     for projectile in self.projectiles:
       projectile.draw(screen)
-    self.level.draw_above(screen)
 
-  def spawn(self, monster):
-    mon = monster()
-    mon.x, mon.y = self.level.waypoints_scaled[0]
-    mon.waypoints = self.level.waypoints_scaled
+  def spawn(self, mon):
     self.creeps.append(mon)
