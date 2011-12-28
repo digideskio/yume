@@ -63,7 +63,7 @@ class Monster(gfx.Drawable):
         self.killer = dealer
 
 class Lame(Monster):
-  worth = .5
+  worth = 1.0
 
   def __init__(self):
     Monster.__init__(self)
@@ -75,4 +75,21 @@ class Lame(Monster):
 
   def update(self):
     self.walk()
-    self.rect.center = (self.x + sin(self.t) * 10, self.y + cos(self.t)**2 * 10)
+#    self.rect.center = (self.x + sin(self.t) * 10, self.y + cos(self.t)**2 * 10)
+
+class Creepo(Monster):
+  worth = 3.0
+  hp = 60
+  graphic = gfx.Monster2GFX
+
+  def __init__(self):
+    Monster.__init__(self)
+    self.x = random.randint(100, 800)
+    self.y = random.randint(50, 800)
+    self.t = random.randint(0, 20)
+    self.rect = Rect(self.x, self.y, self.gfx.width, self.gfx.height)
+    self.rect.center = self.x, self.y
+
+  def update(self):
+    self.walk()
+#    self.rect.center = (self.x + sin(self.t) * 10, self.y + cos(self.t)**2 * 10)

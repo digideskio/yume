@@ -80,7 +80,7 @@ Towers:
     o Shoots at random monsters
     + Successful hits will pause monsters for a short time
     - Reduces efficiency of nearby towers
-    
+
 Spells:
 - Fire: Damages towers and enemies in a given radius
 - Water: Slows enemies down

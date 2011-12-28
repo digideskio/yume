@@ -62,9 +62,10 @@ class LevelInvocation(Level):
         (6, 16), (6, 21), (18, 21), (18, 8), (32, 8)]
     self.waves = deque()
     self.waves.append(Wave({Lame: 5}, mps=1, delay=15))
-    self.waves.append(Wave({Lame: 20}, mps=100, delay=10))
-    self.waves.append(Wave({Lame: 10}, mps=10, delay=8))
-    self.waves.append(Wave({Lame: 30}, mps=20, delay=15))
+    self.waves.append(Wave({Creepo: 2}, mps=0.2, delay=10))
+    self.waves.append(Wave({Lame: 30}, mps=10, delay=8))
+    self.waves.append(Wave({Creepo: 10}, mps=2, delay=15))
     self.waves.append(Wave({Lame: 40}, mps=20, delay=15))
     self.waves.append(Wave({Lame: 30}, mps=60, delay=15))
     self.waves.append(Wave({Lame: 100}, mps=5, delay=15))
+    self.waves.append(Wave({Creepo: 30}, mps=5, delay=15))

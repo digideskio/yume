@@ -43,7 +43,6 @@ def get_gfx(name, args):
   gfx.surface = surfaces[gfx.current_frame]
   return gfx
 
-
 def _draw_gfx(cls, args):
   gfx = cls(args)
   surfaces = []
@@ -51,11 +50,15 @@ def _draw_gfx(cls, args):
     surface = pygame.Surface((gfx.width, gfx.height))
     surface.set_colorkey((0, 0, 0))
     gfx.draw_frame(surface, i)
-    surfaces.append(surface.convert_alpha())
+    surfaces.append(surface.convert())
   return surfaces
-  gfx.surfaces = surfaces
-  gfx.surface = surfaces[gfx.current_frame]
-  return gfx
+
+def _periodic_blit(source, destination):
+  w, h = source.get_size()
+  x, y = destination.get_size()
+  for i in range(int(ceil(float(x) / w))):
+    for j in range(int(ceil(float(y) / h))):
+      destination.blit(source, (w * i, h * j))
 
 #=============================================================================
 #== Graphics
@@ -97,6 +100,18 @@ class MonsterGFX(GFX):
     circle(surface, (255, 0, 0), (5, 5), 5)
     circle(surface, (100, 100, 100), (5, 5), 5, 2)
 
+class Monster2GFX(GFX):
+  height = 10
+  width = 10
+  frames = 1
+
+  def __init__(self, args):
+    self.scale, self.rotation = args
+
+  def draw_frame(self, surface, n):
+    circle(surface, (0, 100, 255), (5, 5), 5)
+    circle(surface, (100, 100, 100), (5, 5), 5, 2)
+
 class TowerBubbleGFX(GFX):
   height = 25
   width = 25
@@ -107,10 +122,12 @@ class TowerBubbleGFX(GFX):
 
   def draw_frame(self, surface, n):
 #    wid = self.width * (sin(n*pi/8) + 8) / 9.0
+    layer = pygame.Surface((self.width, self.height))
+    circle(layer, (255, 255, 255), (12, 12), 12)
+    circle(layer, (0,   255, 0  ), (12, 12), 12, 1)
     wid = self.width
-    hei = self.height * (cos(n*pi/16) + 4) / 5.0
-    ellipse(surface, (255, 255, 255), Rect((self.width-wid)/2, (self.height-hei), wid, hei))
-    ellipse(surface, (0, 255, 0), Rect((self.width-wid)/2, (self.height-hei), wid, hei), 1)
+    hei = int(self.height * (cos(n*pi/16) + 4) / 5.0)
+    surface.blit(pygame.transform.smoothscale(layer, (wid, hei)), (0, self.height - hei))
 #    circle(surface, (12, 12), 12)
 #    circle(surface, (0, 255, 0), (12, 12), 12, 1)
 
@@ -149,12 +166,14 @@ class Background(GFX):
       for i in range(120):
         points.append(((0 if i % 2 else 10) + j * 40, 600-5*i+n+j))
       polygon(surface, (155, 0, 0), points)
-#    line(surface, (255, 0, 0), (0, 0), (n * 10, 100))
-#    line(surface, (255, 0, 0), (0, 0), (n * 10, 100))
 
   def draw_frame(self, surface, n):
-#    colormap = 
-#    ary = numpy.zeros((800, 600))
+    layer = pygame.Surface((16, 16))
+    circle(layer, (120+100*sin(n*pi/self.frames*2), 0, 0), ((n%8)*2-8, (n%8)-8), 8)
+    circle(layer, (120+100*sin(n*pi/self.frames*2), 0, 0), ((n%8)*2+8, (n%8)+8), 8)
+    _periodic_blit(layer, surface)
+
+  def draw_frame(self, surface, n):
     x, y = surface.get_size()
     xc = x / self.compression
     yc = y / self.compression

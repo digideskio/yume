@@ -127,7 +127,6 @@ class Arena(object):
       return layer.convert()
 
     self.creeplayer = makelayer()
-    self.projectilelayer = makelayer()
 
     self.rect = Rect(ARENA_LEFT_POS, ARENA_TOP_POS,
         ARENA_LEFT_POS + ARENA_WIDTH, ARENA_TOP_POS + ARENA_HEIGHT)
@@ -201,15 +200,13 @@ class Arena(object):
     self.background.next_frame()
     self.level.draw(screen)
     self.creeplayer.fill((0, 0, 0))
-    self.projectilelayer.fill((0, 0, 0))
     for creep in self.creeps:
       creep.draw(self.creeplayer)
     for tower in list(self.towers):
-      tower.draw(self.projectilelayer)
+      tower.draw(self.creeplayer)
     for projectile in self.projectiles:
-      projectile.draw(self.projectilelayer)
+      projectile.draw(self.creeplayer)
     screen.blit(self.creeplayer, (ARENA_LEFT_POS, ARENA_TOP_POS))
-    screen.blit(self.projectilelayer, (ARENA_LEFT_POS, ARENA_TOP_POS))
     self.renderer.draw(screen)
     self.level.draw_above(screen)
 
