@@ -31,6 +31,9 @@ class Level(object):
     def mult(pair):
       return (pair[0] * 25, pair[1] * 25)
 
+    def add1(pair):
+      return (pair[0] + 1, pair[1] + 1)
+
     self.waypoints_scaled = map(mult, self.waypoints)
 
     self.surface.lock()
@@ -41,6 +44,8 @@ class Level(object):
       pygame.draw.circle(self.surface, (0, 0, 0), wp_m, 11, 0)
     pygame.draw.lines(self.surface, (0, 155, 0), False, self.waypoints_scaled, 24)
     pygame.draw.lines(self.surface, (0, 0, 0), False, self.waypoints_scaled, 22)
+    pygame.draw.circle(self.surface, (0, 155, 0), add1(self.waypoints_scaled[0]), 11, 0)
+    pygame.draw.circle(self.surface, (100, 0, 0), add1(self.waypoints_scaled[-1]), 11, 0)
     self.surface.unlock()
     self.surface = self.surface.convert()
 
@@ -53,7 +58,7 @@ class Level(object):
 class LevelInvocation(Level):
   def __init__(self):
     Level.__init__(self)
-    self.waypoints = [(10, 0), (10, 4), (3, 4), (3, 8), (12, 8), (12, 16),
+    self.waypoints = [(10, 1), (10, 4), (3, 4), (3, 8), (12, 8), (12, 16),
         (6, 16), (6, 21), (18, 21), (18, 8), (32, 8)]
     self.waves = deque()
     self.waves.append(Wave({Lame: 5}, mps=1, delay=15))

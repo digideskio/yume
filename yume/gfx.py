@@ -34,10 +34,15 @@ class GFX(object):
 def get_gfx(name, args):
   key = (name, args)
   if key not in _gfx_cache:
-    result = _draw_gfx(name, args)
-    _gfx_cache[key] = result
-    return result
-  return _gfx_cache[key]
+    surfaces = _draw_gfx(name, args)
+    _gfx_cache[key] = surfaces
+  else:
+    surfaces = _gfx_cache[key]
+  gfx = name(args)
+  gfx.surfaces = surfaces
+  gfx.surface = surfaces[gfx.current_frame]
+  return gfx
+
 
 def _draw_gfx(cls, args):
   gfx = cls(args)
@@ -47,6 +52,7 @@ def _draw_gfx(cls, args):
     surface.set_colorkey((0, 0, 0))
     gfx.draw_frame(surface, i)
     surfaces.append(surface.convert_alpha())
+  return surfaces
   gfx.surfaces = surfaces
   gfx.surface = surfaces[gfx.current_frame]
   return gfx
@@ -94,14 +100,19 @@ class MonsterGFX(GFX):
 class TowerBubbleGFX(GFX):
   height = 25
   width = 25
-  frames = 1
+  frames = 32
 
   def __init__(self, args):
     self.scale, self.rotation = args
 
   def draw_frame(self, surface, n):
-    circle(surface, (255, 255, 255), (12, 12), 12)
-    circle(surface, (0, 255, 0), (12, 12), 12, 1)
+#    wid = self.width * (sin(n*pi/8) + 8) / 9.0
+    wid = self.width
+    hei = self.height * (cos(n*pi/16) + 4) / 5.0
+    ellipse(surface, (255, 255, 255), Rect((self.width-wid)/2, (self.height-hei), wid, hei))
+    ellipse(surface, (0, 255, 0), Rect((self.width-wid)/2, (self.height-hei), wid, hei), 1)
+#    circle(surface, (12, 12), 12)
+#    circle(surface, (0, 255, 0), (12, 12), 12, 1)
 
 class TowerTurretGFX(GFX):
   height = 25
@@ -120,8 +131,8 @@ class TowerTurretGFX(GFX):
 #    surface.set_alpha(100)
 
 class Background(GFX):
-  height = 600
-  width = 800
+  width = 1024
+  height = 768
   frames = 8
   compression = 20
 
@@ -164,7 +175,7 @@ class Background(GFX):
 class ManaBar(GFX):
   width = base_width = SCREEN_WIDTH
   height = 16
-  frames = 32
+  frames = 1
 
   def __init__(self, args):
     self.scale = args[0]
@@ -183,5 +194,31 @@ class ManaBar(GFX):
             ary[x][y] = min(255, (v + 3 * (x - self.width + 50)))
           else:
             ary[x][y] = min(255, v)
+    pygame.surfarray.blit_array(surface, ary)
+#    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
+
+class CostBar(GFX):
+  width = base_width = SCREEN_WIDTH
+  height = 16
+  frames = 1
+
+  def __init__(self, args):
+    self.scale = args[0]
+    self.width = self.scale * self.base_width
+    self.height = 16
+
+  def draw_frame(self, surface, n):
+    ary = numpy.zeros((self.width, self.height))
+    for x in range(self.width):
+      for y in range(self.height):
+        if y == 0 or y == self.height - 1:
+          ary[x][y] = 255
+        else:
+          v = (sin((x/2+y+n/2.0)*pi/4) + 1) * 64 + 128
+          if x > self.width - 50:
+            ary[x][y] = min(255, (v + 3 * (x - self.width + 50)))
+          else:
+            ary[x][y] = min(255, v)
+        ary[x][y] *= 256
     pygame.surfarray.blit_array(surface, ary)
 #    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))

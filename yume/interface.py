@@ -19,20 +19,15 @@ class Interface(object):
     self.dragged_surface = None
     self.arena = Arena()
     Global.arena = self.arena
-    self.bottom1 = Bottom()
-    self.bottom2 = Bottom()
-    self.bottom3 = Bottom()
-    self.costbar = get_sprite('cost.png', dirty=True)
-    self.menubar = get_sprite('menu.png', dirty=True)
     self.wave_marker = pygame.Surface((30, ARENA_HEIGHT))
-    self.renderer = pygame.sprite.RenderPlain([self.bottom1, self.bottom2,
-      self.bottom3, self.menubar])
     self.renderer2 = pygame.sprite.RenderPlain([])
     self.last_update = time.time()
     self.font = get_font()
 
     self.manabar = get_gfx(gfx.ManaBar, (1, ))
     self.manabar_x = -self.manabar.width
+    self.costbar = get_gfx(gfx.CostBar, (1, ))
+    self.costbar_x = -self.costbar.width
 
   def update(self):
     dt = time.time() - self.last_update
@@ -59,9 +54,9 @@ class Interface(object):
 
   def draw(self, screen):
     w, h = screen.get_size()
-    self.bottom1.rect.bottomleft = 0, h
-    self.bottom2.rect.bottomleft = 500, h
-    self.bottom3.rect.bottomleft = 1000, h
+
+    self.arena.update()
+    self.arena.draw(screen)
 
     manapos = self.manabar.width / self.mana_max * self.mana - self.manabar.width
     current_manapos = self.manabar_x
@@ -73,15 +68,12 @@ class Interface(object):
     self.manabar.next_frame()
 
     if self.dragging:
-      pos = self.costbar.rect.width / self.mana_max * self.dragging.cost - self.costbar.rect.width
-      self.costbar.rect.topleft = pos, 2
+      pos = self.costbar.width / self.mana_max * self.dragging.cost - self.costbar.width
+      self.costbar_x = pos, 2
+      screen.blit(self.costbar.surface, (pos, 2))
+      self.costbar.next_frame()
 
-    self.menubar.rect.topright = w, 0
-    self.arena.update()
-    self.arena.draw(screen)
-    self.renderer.update()
     self.renderer2.update()
-    self.renderer.draw(screen)
     self.renderer2.draw(screen)
     if self.dragging and self.dragged_surface:
       screen.blit(self.dragged_surface, pygame.mouse.get_pos())
@@ -116,7 +108,6 @@ class Interface(object):
 
   def undrag(self):
     self.dragging = None
-    self.renderer2.remove(self.costbar)
 
   def press(self, key):
     if key == K_1:
@@ -127,7 +118,6 @@ class Interface(object):
   def drag(self, obj):
     self.dragging = obj
     self.dragged_surface = get_gfx(obj.graphic, (0, 0)).surface
-    self.renderer2.add(self.costbar)
 
 class Arena(object):
   def __init__(self):
@@ -207,7 +197,7 @@ class Arena(object):
     self.last_update = time.time()
 
   def draw(self, screen):
-    screen.blit(self.background.surface, (ARENA_LEFT_POS, ARENA_TOP_POS))
+    screen.blit(self.background.surface, (0, 0))
     self.background.next_frame()
     self.level.draw(screen)
     self.creeplayer.fill((0, 0, 0))
@@ -228,9 +218,3 @@ class Arena(object):
     mon.x, mon.y = self.level.waypoints_scaled[0]
     mon.waypoints = self.level.waypoints_scaled
     self.creeps.append(mon)
-
-class Bottom(pygame.sprite.Sprite):
-  def __init__(self):
-    pygame.sprite.Sprite.__init__(self)
-    self.image = load_image('foot.png')
-    self.rect = self.image.get_rect()
