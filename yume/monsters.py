@@ -12,7 +12,7 @@ class Monster(gfx.Drawable):
   speed = 1
   graphic = gfx.MonsterGFX
 
-  def __init__(self):
+  def __init__(self, gene, arena):
     gfx.Drawable.__init__(self)
     self.stagger = 0
     self.waypoint_index = 1
@@ -22,7 +22,18 @@ class Monster(gfx.Drawable):
     self.vector_x = 0
     self.killer = None
 
-  def walk(self):
+    # =====================
+    r = arena.rect
+    self.hp = (gene.count('a') + 1) * 10
+    self.speed = 1
+    worth = log(len(gene) + 2)
+
+    if (gene.count('b') / 2) % 2:
+      self.x, self.y = r.midleft
+    else:
+      self.x, self.y = r.midright
+
+  def update(self):
     if self.hp <= 0:
       return
     brain_pos = Global.arena.brain_pos
@@ -55,53 +66,3 @@ class Monster(gfx.Drawable):
       self.stagger = max(10, self.stagger)
       if self.hp <= 0:
         self.killer = dealer
-
-class GeneMonster(Monster):
-  graphic = gfx.MonsterGFX
-
-  def __init__(self, gene, arena):
-    r = arena.rect
-    Monster.__init__(self)
-    self.hp = (gene.count('a') + 1) * 10
-    self.speed = 1
-    worth = log(len(gene) + 2)
-
-    if (gene.count('b') / 2) % 2:
-      self.x, self.y = r.midleft
-    else:
-      self.x, self.y = r.midright
-
-  def update(self):
-    self.walk()
-
-class Lame(Monster):
-  worth = 1.0
-
-  def __init__(self):
-    Monster.__init__(self)
-    self.x = random.randint(100, 800)
-    self.y = random.randint(50, 800)
-    self.t = random.randint(0, 20)
-    self.rect = Rect(self.x, self.y, self.gfx.width, self.gfx.height)
-    self.rect.center = self.x, self.y
-
-  def update(self):
-    self.walk()
-#    self.rect.center = (self.x + sin(self.t) * 10, self.y + cos(self.t)**2 * 10)
-
-class Creepo(Monster):
-  worth = 3.0
-  hp = 60
-  graphic = gfx.Monster2GFX
-
-  def __init__(self):
-    Monster.__init__(self)
-    self.x = random.randint(100, 800)
-    self.y = random.randint(50, 800)
-    self.t = random.randint(0, 20)
-    self.rect = Rect(self.x, self.y, self.gfx.width, self.gfx.height)
-    self.rect.center = self.x, self.y
-
-  def update(self):
-    self.walk()
-#    self.rect.center = (self.x + sin(self.t) * 10, self.y + cos(self.t)**2 * 10)

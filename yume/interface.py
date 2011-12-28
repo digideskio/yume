@@ -209,7 +209,7 @@ class Arena(object):
         self.monster_timer -= dt
       elif self.monsters_left:
         Global.yume.log("Monsters Left: %d" % len(self.monsters_left))
-        monster = GeneMonster(self.monsters_left.pop(), self)
+        monster = Monster(self.monsters_left.pop(), self)
         self.spawn(monster)
         self.monster_timer = 0.5
       else:
