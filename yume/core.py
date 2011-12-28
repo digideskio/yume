@@ -25,12 +25,20 @@ def main():
 
   yu = Yume()
   yu.parse_args()
-  return yu.run()
+  if yu.profile:
+    import cProfile
+    import pstats
+    exit_code = cProfile.run('yume.Global.yume.run()', 'profile')
+    p = pstats.Stats('profile')
+    print(p.sort_stats('cumulative').print_stats(100))
+  else:
+    return yu.run()
 
 class Yume(object):
   def __init__(self):
     Global.yume = self
     self.log_entries = deque(maxlen=10)
+    self.profile = False
 
   def log(self, text):
     self.log_entries.appendleft(text)
@@ -38,6 +46,7 @@ class Yume(object):
   def parse_args(self):
     p = OptionParser(usage="%prog [options]")
     p.add_option('-r', '--resolution', type='string')
+    p.add_option('-p', '--profile', action='store_true')
     options, _ = p.parse_args()
 
     if options.resolution:
@@ -45,11 +54,12 @@ class Yume(object):
       if match:
         w, h = match.groups()
         yume.SCREEN_WIDTH, yume.SCREEN_HEIGHT = int(w), int(h)
+    self.profile = bool(options.profile)
 
   def run(self):
     from yume.interface import Interface
     self.screen = pygame.display.set_mode((yume.SCREEN_WIDTH, yume.SCREEN_HEIGHT),
-        pygame.SRCALPHA, 32)
+        pygame.SRCALPHA | pygame.DOUBLEBUF, 32)
     self.layer = pygame.Surface((yume.ARENA_WIDTH, yume.ARENA_HEIGHT))
     pygame.display.set_caption('Yume Tower Defense')
 

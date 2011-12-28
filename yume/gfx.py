@@ -178,7 +178,7 @@ class Background(GFX):
     xc = x / self.compression
     yc = y / self.compression
     layer = pygame.Surface((xc, yc))
-    ary = numpy.zeros((xc, yc))
+    ary = numpy.zeros((xc, yc), dtype=numpy.int32)
 
     offset1 = 1 / (self.frames / 4.0)
     offset2 = pi/2.0
@@ -202,7 +202,7 @@ class ManaBar(GFX):
     self.height = 16
 
   def draw_frame(self, surface, n):
-    ary = numpy.zeros((self.width, self.height))
+    ary = numpy.zeros((self.width, self.height), dtype=numpy.int32)
     for x in range(self.width):
       for y in range(self.height):
         if y == 0 or y == self.height - 1:
@@ -227,7 +227,7 @@ class CostBar(GFX):
     self.height = 16
 
   def draw_frame(self, surface, n):
-    ary = numpy.zeros((self.width, self.height))
+    ary = numpy.zeros((self.width, self.height), dtype=numpy.int32)
     for x in range(self.width):
       for y in range(self.height):
         if y == 0 or y == self.height - 1:
