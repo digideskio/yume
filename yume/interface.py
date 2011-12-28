@@ -10,10 +10,25 @@ from yume.towers import *
 from yume import *
 from yume import gfx
 
+def make_grid(color):
+  surface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
+  surface.set_colorkey((0, 0, 0))
+
+  surface.lock()
+  surface.fill((0, 0, 0))
+  for i in range(33):
+    x = i * 25
+    pygame.draw.line(surface, color, (x, 0), (x, 26*25))
+  for j in range(27):
+    y = j * 25
+    pygame.draw.line(surface, color, (0, y), (32*25, y))
+  surface.unlock()
+  return surface.convert()
+
 class Interface(object):
   def __init__(self):
     self.mana_max = 300.0
-    self.mana = 100.0
+    self.mana = 300.0
     self.mana_regen = 0.1
     self.dragging = None
     self.dragged_surface = None
@@ -112,6 +127,9 @@ class Interface(object):
   def press(self, key):
     if key == K_1:
       self.drag(TowerBubble)
+    if key == K_0:
+      if not self.arena.brain_exists:
+        self.drag(TowerBrain)
     if key == K_SPACE:
       self.arena.delay = min(1, self.arena.delay)
 
@@ -121,20 +139,19 @@ class Interface(object):
 
 class Arena(object):
   def __init__(self):
-    def makelayer():
-      layer = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
-      layer.set_colorkey((0, 0, 0))
-      return layer.convert()
-
-    self.creeplayer = makelayer()
-
     self.rect = Rect(ARENA_LEFT_POS, ARENA_TOP_POS,
         ARENA_LEFT_POS + ARENA_WIDTH, ARENA_TOP_POS + ARENA_HEIGHT)
     self.renderer = pygame.sprite.RenderPlain([])
 
     self.background = get_gfx(gfx.Background, (1, 1))
+    self.grid = make_grid((100, 0, 0))
 
     self.load_level(LevelInvocation)
+
+  def pos_to_cell(self, x, y):
+    x = int((x + ARENA_LEFT_POS) / 25) * 25 - ARENA_LEFT_POS + 1
+    y = int((y + ARENA_TOP_POS) / 25) * 25 - ARENA_TOP_POS + 1
+    return x, y
 
   def load_level(self, cls):
     self.level = cls()
@@ -143,26 +160,36 @@ class Arena(object):
     self.last_update = 0
     self.active_waves = set()
     self.delay = 1
-    self.cells = [[1] * CELLS_X for _ in range(CELLS_Y)]
+    self.tower_positions = dict()
 
     self.creeps = list()
     self.projectiles = list()
     self.towers = list()
+    self.brain_exists = False
+    Global.yume.log("Press 0 and place your brain to start the game")
 
   def release(self, obj, pos):
     if issubclass(obj, Tower):
-      pos = (pos[0] - ARENA_LEFT_POS, pos[1] - ARENA_TOP_POS)
-      self.createTower(obj, pos)
+      x, y = self.pos_to_cell(pos[0], pos[1])
+      pos = x, y
+      if pos in self.tower_positions:
+        Global.yume.log("Invalid position")
+        return False
+      else:
+        self.tower_positions[pos] = self.createTower(obj, pos)
       return True
 
   def createTower(self, cls, pos):
     tower = cls()
     tower.move(*pos)
     self.towers.append(tower)
+    if cls == TowerBrain:
+      self.brain_exists = True
+    return tower
 
   def update(self):
     self.renderer.update()
-    if self.last_update:
+    if self.last_update and self.brain_exists:
       dt = time.time() - self.last_update
 
       for mob in list(self.creeps):
@@ -198,16 +225,14 @@ class Arena(object):
   def draw(self, screen):
     screen.blit(self.background.surface, (0, 0))
     self.background.next_frame()
-    self.level.draw(screen)
-    self.creeplayer.fill((0, 0, 0))
+    if Global.face.dragging:
+      screen.blit(self.grid, (ARENA_TOP_POS, ARENA_LEFT_POS))
     for creep in self.creeps:
-      creep.draw(self.creeplayer)
+      creep.draw(screen)
     for tower in list(self.towers):
-      tower.draw(self.creeplayer)
+      tower.draw(screen)
     for projectile in self.projectiles:
-      projectile.draw(self.creeplayer)
-    screen.blit(self.creeplayer, (ARENA_LEFT_POS, ARENA_TOP_POS))
-    self.renderer.draw(screen)
+      projectile.draw(screen)
     self.level.draw_above(screen)
 
   def spawn(self, monster):

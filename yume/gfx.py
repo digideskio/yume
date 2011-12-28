@@ -48,7 +48,7 @@ def _draw_gfx(cls, args):
   surfaces = []
   for i in range(gfx.frames):
     surface = pygame.Surface((gfx.width, gfx.height))
-    surface.set_colorkey((0, 0, 0))
+#    surface.set_colorkey((0, 0, 0))
     gfx.draw_frame(surface, i)
     surfaces.append(surface.convert())
   return surfaces
@@ -113,8 +113,8 @@ class Monster2GFX(GFX):
     circle(surface, (100, 100, 100), (5, 5), 5, 2)
 
 class TowerBubbleGFX(GFX):
-  height = 25
-  width = 25
+  height = 24
+  width = 24
   frames = 32
 
   def __init__(self, args):
@@ -131,9 +131,9 @@ class TowerBubbleGFX(GFX):
 #    circle(surface, (12, 12), 12)
 #    circle(surface, (0, 255, 0), (12, 12), 12, 1)
 
-class TowerTurretGFX(GFX):
-  height = 25
-  width = 25
+class TowerBrain(GFX):
+  height = 24
+  width = 24
 
   def __init__(self, args):
     self.scale, self.rotation = args
@@ -143,13 +143,11 @@ class TowerTurretGFX(GFX):
     self.width = int(self.width * self.scale)
 
   def draw_frame(self, surface, n):
-    s = self.scale
-    ellipse(surface, (100, 200, 0), Rect(2*s, 2*s, 22*s, 10*s))
-#    surface.set_alpha(100)
+    circle(surface, (255, 0, 0), (12, 12), 12)
 
 class Background(GFX):
-  width = 1024
-  height = 768
+  width = SCREEN_WIDTH
+  height = SCREEN_HEIGHT
   frames = 8
   compression = 20
 

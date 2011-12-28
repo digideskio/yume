@@ -39,7 +39,7 @@ Monsters randomly drop powerups when die
 Monsters mutate to counter the players strategy
 
 Towers:
-- Turret:
+- Bubbles:
     o Shoots high speed projectiles at random enemies
     + Attacks faster if more enemies are in range
     + At a certain chance it can shoot salves of bullets
@@ -80,6 +80,9 @@ Towers:
     o Shoots at random monsters
     + Successful hits will pause monsters for a short time
     - Reduces efficiency of nearby towers
+- Brain:
+    o Lose a life (increase adrenaline baseline) when monster reach the brain
+    o Requires 2x2 cells
 
 Spells:
 - Fire: Damages towers and enemies in a given radius

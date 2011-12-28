@@ -93,10 +93,10 @@ class Yume(object):
 
       self.interface.update()
       if self.layer.get_size() != self.screen.get_size():
-        self.layer.fill((0, 0, 0))
+#        self.layer.fill((0, 0, 0))
         self.interface.draw(self.layer)
         pygame.transform.scale(self.layer, self.screen.get_size(), self.screen)
       else:
-        self.screen.fill((0, 0, 0))
+#        self.screen.fill((0, 0, 0))
         self.interface.draw(self.screen)
       pygame.display.flip()

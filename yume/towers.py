@@ -41,9 +41,6 @@ class TowerBubble(Tower):
     self.freq = 0
     self.freq2 = 0
 
-  def draw(self, screen):
-    Tower.draw(self, screen)
-
   def update(self):
     if self.cooldown_tick > 0:
       self.cooldown_tick -= 1
@@ -77,3 +74,11 @@ class TowerBubble(Tower):
           monsters = random.sample(monsters, 1)
         for monster in monsters:
           self.shoot(monster)
+
+class TowerBrain(Tower):
+  graphic = gfx.TowerBrain
+  cost = 200
+  cooldown = 20
+
+  def update(self):
+    pass

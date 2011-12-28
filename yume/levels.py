@@ -25,9 +25,30 @@ class Level(object):
     self.waypoints = [(0, 0)]
 
   def initialize(self):
-    self.surface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
-    self.surface.set_colorkey((0, 0, 0))
+    surface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
+    surface.set_colorkey((0, 0, 0))
 
+    surface.lock()
+    surface.fill((0, 0, 0))
+    clr = (0, 155, 0)
+    for i in range(33):
+      x = i * 25
+      pygame.draw.line(surface, clr, (x, 0), (x, 26*25))
+    for j in range(27):
+      y = j * 25
+      pygame.draw.line(surface, clr, (0, y), (32*25, y))
+    surface.unlock()
+    self.surface = surface.convert()
+
+    def mult(pair):
+      return (pair[0] * 25, pair[1] * 25)
+
+    def add1(pair):
+      return (pair[0] + 1, pair[1] + 1)
+
+    self.waypoints_scaled = map(mult, self.waypoints)
+
+  def crap(self):
     def mult(pair):
       return (pair[0] * 25, pair[1] * 25)
 
