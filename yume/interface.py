@@ -145,6 +145,7 @@ class Arena(object):
 
     self.background = get_gfx(gfx.Background, (1, 1))
     self.grid = make_grid((100, 0, 0))
+    self.bg_tick = 0
 
     self.load_level(Level)
 
@@ -222,13 +223,16 @@ class Arena(object):
 
   def draw(self, screen):
     screen.blit(self.background.surface, (0, 0))
-    self.background.next_frame()
+    self.bg_tick += 1
+    if self.bg_tick >= 3:
+      self.background.next_frame()
+      self.bg_tick = 0
     if Global.face.dragging:
       screen.blit(self.grid, (ARENA_TOP_POS, ARENA_LEFT_POS))
-    for creep in self.creeps:
-      creep.draw(screen)
     for tower in list(self.towers):
       tower.draw(screen)
+    for creep in self.creeps:
+      creep.draw(screen)
     for projectile in self.projectiles:
       projectile.draw(screen)
 

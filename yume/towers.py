@@ -23,6 +23,7 @@ class Tower(gfx.Drawable):
 
 class TowerBubble(Tower):
   graphic = gfx.TowerBubbleGFX
+  transparent = True
 #  gfx = gfx.TowerTurretGFX
   cost = 28
   cooldown = 20

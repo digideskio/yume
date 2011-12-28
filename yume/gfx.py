@@ -12,10 +12,11 @@ _gfx_cache = {}
 
 class Drawable(object):
   graphic = None
+  transparent = False
   def __init__(self):
     self.x, self.y = 0, 0
     if self.graphic:
-      self.gfx = get_gfx(self.graphic, (1, 1))
+      self.gfx = get_gfx(self.graphic, (1, 1), self.transparent)
       self.rect = Rect(0, 0, self.gfx.width, self.gfx.height)
     self.rect = Rect(0, 0, 1, 1)
 
@@ -31,10 +32,10 @@ class GFX(object):
     self.current_frame = (self.current_frame + 1) % len(self.surfaces)
     self.surface = self.surfaces[self.current_frame]
 
-def get_gfx(name, args):
+def get_gfx(name, args, transparency=False):
   key = (name, args)
   if key not in _gfx_cache:
-    surfaces = _draw_gfx(name, args)
+    surfaces = _draw_gfx(name, args, transparency)
     _gfx_cache[key] = surfaces
   else:
     surfaces = _gfx_cache[key]
@@ -43,12 +44,13 @@ def get_gfx(name, args):
   gfx.surface = surfaces[gfx.current_frame]
   return gfx
 
-def _draw_gfx(cls, args):
+def _draw_gfx(cls, args, transparency):
   gfx = cls(args)
   surfaces = []
   for i in range(gfx.frames):
     surface = pygame.Surface((gfx.width, gfx.height))
-#    surface.set_colorkey((0, 0, 0))
+    if transparency:
+      surface.set_colorkey((0, 0, 0))
     gfx.draw_frame(surface, i)
     surfaces.append(surface.convert())
   return surfaces
@@ -148,7 +150,7 @@ class TowerBrain(GFX):
 class Background(GFX):
   width = SCREEN_WIDTH
   height = SCREEN_HEIGHT
-  frames = 8
+  frames = 16
   compression = 20
 
   def __init__(self, args):
@@ -171,7 +173,7 @@ class Background(GFX):
     circle(layer, (120+100*sin(n*pi/self.frames*2), 0, 0), ((n%8)*2+8, (n%8)+8), 8)
     _periodic_blit(layer, surface)
 
-  def draw_frame(self, surface, n):
+  def draw_frame2(self, surface, n):
     x, y = surface.get_size()
     xc = x / self.compression
     yc = y / self.compression
@@ -188,6 +190,25 @@ class Background(GFX):
     layer = pygame.transform.scale(layer, surface.get_size())
     surface.blit(layer, (0, 0))
 #    pygame.surfarray.blit_array(surface, ary)
+
+  def draw_frame(self, surface, n):
+    self.draw_frame2(surface,n)
+    layer = pygame.Surface((16, 32))
+    layer.set_colorkey((0, 0, 0))
+    points = []
+    points.append((0, -32+n*2))
+    points.append((8, -16+n*2))
+    points.append((0, n*2))
+    points.append((8, 16+n*2))
+    points.append((0, 32+n*2))
+    points.append((2, 32+n*2))
+    points.append((10, 16+n*2))
+    points.append((2, n*2))
+    points.append((10, -16+n*2))
+    points.append((2, -32+n*2))
+#    lines(layer, (155, 0, 0), True, points)
+    polygon(layer, (50, 50, 0), points)
+    _periodic_blit(layer, surface)
 
 class ManaBar(GFX):
   width = base_width = SCREEN_WIDTH
