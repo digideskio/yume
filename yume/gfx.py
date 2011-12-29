@@ -260,3 +260,29 @@ class CostBar(GFX):
         ary[x][y] *= 256
     pygame.surfarray.blit_array(surface, ary)
 #    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
+
+class AdrenalineBar(GFX):
+  width = base_width = SCREEN_WIDTH
+  height = 16
+  frames = 1
+
+  def __init__(self, args):
+    self.scale = args[0]
+    self.width = self.scale * self.base_width
+    self.height = 16
+
+  def draw_frame(self, surface, n):
+    ary = numpy.zeros((self.width, self.height), dtype=numpy.int32)
+    for x in range(self.width):
+      for y in range(self.height):
+        if y == 0 or y == self.height - 1:
+          ary[x][y] = 255
+        else:
+          v = (sin((x/2+y+n/2.0)*pi/4) + 1) * 64 + 128
+          if x > self.width - 50:
+            ary[x][y] = min(200, (v + 3 * (x - self.width + 50)))
+          else:
+            ary[x][y] = min(200, v)
+        ary[x][y] *= 16776960
+    pygame.surfarray.blit_array(surface, ary)
+#    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))

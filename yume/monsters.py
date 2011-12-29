@@ -28,10 +28,19 @@ class Monster(gfx.Drawable):
     self.speed = 1
     worth = log(len(gene) + 2)
 
-    if (gene.count('b') / 2) % 2:
-      self.x, self.y = r.midleft
-    else:
-      self.x, self.y = r.midright
+    ep = arena.level.entry_points
+    x, y = ep[gene.count('b') % len(ep)]
+    self.x, self.y = arena.cell_to_pos(x + 2, y + 2)
+#    if (gene.count('b') / 2) % 2:
+#      if (gene.count('c') / 2) % 2:
+#        self.x, self.y = r.midleft
+#      else:
+#        self.x, self.y = r.midtop
+#    else:
+#      if (gene.count('c') / 2) % 2:
+#        self.x, self.y = r.midright
+#      else:
+#        self.x, self.y = r.midbottom
 
   def update(self):
     if self.hp <= 0:

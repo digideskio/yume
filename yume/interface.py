@@ -10,26 +10,16 @@ from yume.towers import *
 from yume import *
 from yume import gfx
 
-def make_grid(color):
-  surface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
-  surface.set_colorkey((0, 0, 0))
-
-  surface.lock()
-  surface.fill((0, 0, 0))
-  for i in range(33):
-    x = i * 25
-    pygame.draw.line(surface, color, (x, 0), (x, 26*25))
-  for j in range(27):
-    y = j * 25
-    pygame.draw.line(surface, color, (0, y), (32*25, y))
-  surface.unlock()
-  return surface.convert()
-
 class Interface(object):
   def __init__(self):
     self.mana_max = 300.0
     self.mana = 300.0
     self.mana_regen = 0.1
+    self.adren = 0.0
+    self.adren_max = 100.0
+    self.adren_baseline = 0.0
+    self.adren_regen = 1
+    self.adren_baseline_regen = -0.1
     self.dragging = None
     self.dragged_surface = None
     self.arena = Arena()
@@ -39,6 +29,8 @@ class Interface(object):
     self.last_update = time.time()
     self.font = get_font()
 
+    self.adrenbar = get_gfx(gfx.AdrenalineBar, (1, ))
+    self.adrenbar_x = -self.adrenbar.width
     self.manabar = get_gfx(gfx.ManaBar, (1, ))
     self.manabar_x = -self.manabar.width
     self.costbar = get_gfx(gfx.CostBar, (1, ))
@@ -49,8 +41,25 @@ class Interface(object):
     self.last_update = time.time()
     self.mana = max(0, min(self.mana + self.mana_regen * dt, self.mana_max))
 
+    # adrenaline foo
+    self.adren_baseline = max(0, min(self.adren_baseline +
+      self.adren_baseline_regen * dt, self.adren_max))
+    if self.adren >= self.adren_max:
+      Global.yume.log("YOU DIE!!11")
+      self.adren = self.adren_max
+    else:
+      diff = self.adren - self.adren_baseline
+      if abs(diff) < self.adren_regen * 2:
+        self.adren = self.adren_baseline
+      elif diff > 0:
+        self.adren = max(0, self.adren - self.adren_regen * dt)
+      else:
+        self.adren = max(0, self.adren + self.adren_regen * dt)
+
   def crash(self):
-    self.mana = int(self.mana * 0.5)
+    self.adren_baseline += 10
+    self.adren += 10
+    self.mana = int(self.mana * 0.8)
 
   def distance_between(self, x1, y1, x2, y2):
     return sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
@@ -81,6 +90,15 @@ class Interface(object):
     self.manabar_x = manapos
     screen.blit(self.manabar.surface, (manapos, 2))
     self.manabar.next_frame()
+
+    adrenpos = self.adrenbar.width / self.adren_max * self.adren - self.adrenbar.width
+    current_adrenpos = self.adrenbar_x
+    diff = current_adrenpos - adrenpos
+    if abs(diff) > 2:
+      adrenpos += diff * 0.80
+    self.adrenbar_x = adrenpos
+    screen.blit(self.adrenbar.surface, (adrenpos, 22))
+    self.adrenbar.next_frame()
 
     if self.dragging:
       pos = self.costbar.width / self.mana_max * self.dragging.cost - self.costbar.width
@@ -144,14 +162,18 @@ class Arena(object):
     self.renderer = pygame.sprite.RenderPlain([])
 
     self.background = get_gfx(gfx.Background, (1, 1))
-    self.grid = make_grid((100, 0, 0))
     self.bg_tick = 0
 
-    self.load_level(Level)
+    self.load_level(Level1)
 
   def pos_to_cell(self, x, y):
-    x = int((x + ARENA_LEFT_POS) / 25) * 25 - ARENA_LEFT_POS + 1
-    y = int((y + ARENA_TOP_POS) / 25) * 25 - ARENA_TOP_POS + 1
+    x = int((x + ARENA_LEFT_POS) / 25)
+    y = int((y + ARENA_TOP_POS) / 25)
+    return x, y
+
+  def cell_to_pos(self, x, y):
+    x = int(x * 25 - ARENA_LEFT_POS + 1)
+    y = int(y * 25 - ARENA_TOP_POS + 1)
     return x, y
 
   def load_level(self, cls):
@@ -160,24 +182,29 @@ class Arena(object):
     self.last_update = 0
     self.delay = 1
     self.monster_timer = 0
-    self.tower_positions = dict()
+    self.tower_positions = self.level.cells
 
     self.creeps = list()
     self.projectiles = list()
     self.towers = list()
     self.brain_pos = None
     self.monsters_left = set()
+    self.grid = self.level.make_grid((100, 0, 0))
+    #print(self.level.entry_points)
+    #print(self.level.cells)
+    #raise SystemExit()
     Global.yume.log("Press 0 and place your brain to start the game")
 
   def release(self, obj, pos):
     if issubclass(obj, Tower):
       x, y = self.pos_to_cell(pos[0], pos[1])
       pos = x, y
-      if pos in self.tower_positions:
+      pos_ = x - 2, y - 2
+      if pos_ in self.tower_positions:
         Global.yume.log("Invalid position")
         return False
       else:
-        self.tower_positions[pos] = self.createTower(obj, pos)
+        self.tower_positions[pos] = self.createTower(obj, self.cell_to_pos(x, y))
       return True
 
   def createTower(self, cls, pos):
@@ -209,7 +236,6 @@ class Arena(object):
       if self.monster_timer > 0:
         self.monster_timer -= dt
       elif self.monsters_left:
-        Global.yume.log("Monsters Left: %d" % len(self.monsters_left))
         monster = Monster(self.monsters_left.pop(), self)
         self.spawn(monster)
         self.monster_timer = 0.5
@@ -223,6 +249,8 @@ class Arena(object):
 
   def draw(self, screen):
     screen.blit(self.background.surface, (0, 0))
+    screen.blit(self.background.surface, (0, 0))
+    #screen.fill((0, 0, 0))
     self.bg_tick += 1
     if self.bg_tick >= 3:
       self.background.next_frame()
