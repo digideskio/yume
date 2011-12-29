@@ -52,7 +52,10 @@ def _draw_gfx(cls, args, transparency):
     if transparency:
       surface.set_colorkey((0, 0, 0))
     gfx.draw_frame(surface, i)
-    surfaces.append(surface.convert())
+    if transparency:
+      surfaces.append(surface.convert_alpha())
+    else:
+      surfaces.append(surface.convert())
   return surfaces
 
 def _periodic_blit(source, destination):
@@ -146,6 +149,20 @@ class TowerBrain(GFX):
 
   def draw_frame(self, surface, n):
     circle(surface, (255, 0, 0), (12, 12), 12)
+
+class TowerNode(GFX):
+  height = 24
+  width = 24
+
+  def __init__(self, args):
+    self.scale, self.rotation = args
+    self.recoil = 0
+#    self.scale, self.rotation, self.recoil = args
+    self.height = int(self.height * self.scale)
+    self.width = int(self.width * self.scale)
+
+  def draw_frame(self, surface, n):
+    circle(surface, (0, 255, 0), (12, 12), 8)
 
 class Background(GFX):
   width = SCREEN_WIDTH

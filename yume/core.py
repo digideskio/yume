@@ -74,6 +74,7 @@ class Yume(object):
       if i == 180:
         i = 0
         self.log("%.3f FPS" % clock.get_fps())
+        print("%.3f FPS" % clock.get_fps())
 
       t1 = time.time()
       for event in pygame.event.get():
@@ -93,10 +94,8 @@ class Yume(object):
 
       self.interface.update()
       if self.layer.get_size() != self.screen.get_size():
-#        self.layer.fill((0, 0, 0))
         self.interface.draw(self.layer)
         pygame.transform.scale(self.layer, self.screen.get_size(), self.screen)
       else:
-#        self.screen.fill((0, 0, 0))
         self.interface.draw(self.screen)
       pygame.display.flip()

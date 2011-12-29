@@ -146,8 +146,10 @@ class Interface(object):
     if key == K_1:
       self.drag(TowerBubble)
     if key == K_0:
-      if not self.arena.brain_pos:
+      if not self.arena.brain:
         self.drag(TowerBrain)
+    if key == K_9:
+      self.drag(TowerNode)
     if key == K_SPACE:
       self.arena.delay = min(1, self.arena.delay)
 
@@ -187,12 +189,9 @@ class Arena(object):
     self.creeps = list()
     self.projectiles = list()
     self.towers = list()
-    self.brain_pos = None
+    self.brain = None
     self.monsters_left = set()
     self.grid = self.level.make_grid((100, 0, 0))
-    #print(self.level.entry_points)
-    #print(self.level.cells)
-    #raise SystemExit()
     Global.yume.log("Press 0 and place your brain to start the game")
 
   def release(self, obj, pos):
@@ -212,12 +211,15 @@ class Arena(object):
     tower.move(*pos)
     self.towers.append(tower)
     if cls == TowerBrain:
-      self.brain_pos = pos
+      self.brain = tower
+      self.nodes = [tower]
+    elif cls == TowerNode:
+      self.nodes.append(tower)
     return tower
 
   def update(self):
     self.renderer.update()
-    if self.last_update and self.brain_pos:
+    if self.last_update and self.brain:
       dt = time.time() - self.last_update
 
       for mob in list(self.creeps):
@@ -249,8 +251,7 @@ class Arena(object):
 
   def draw(self, screen):
     screen.blit(self.background.surface, (0, 0))
-    screen.blit(self.background.surface, (0, 0))
-    #screen.fill((0, 0, 0))
+#    screen.blit(self.background.surface, (5, 5))
     self.bg_tick += 1
     if self.bg_tick >= 3:
       self.background.next_frame()

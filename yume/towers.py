@@ -31,7 +31,7 @@ class TowerBubble(Tower):
   cooldown_step = 1
   range = 100
   damage = 4
-  special_chance = 0.03
+  special_chance = 0.01
   projectile = ProjectileBullet
 
   def __init__(self):
@@ -78,7 +78,17 @@ class TowerBubble(Tower):
 
 class TowerBrain(Tower):
   graphic = gfx.TowerBrain
+  transparent = True
   cost = 200
+  cooldown = 20
+
+  def update(self):
+    pass
+
+class TowerNode(Tower):
+  graphic = gfx.TowerNode
+  transparent = True
+  cost = 2
   cooldown = 20
 
   def update(self):
