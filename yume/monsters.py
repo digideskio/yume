@@ -21,6 +21,7 @@ class Monster(gfx.Drawable):
     self.waypoints = [(0, 0)]
     self.calc_vector = True
     self.killer = None
+    self.tunnel_entered = False
 
     # undefined
     self.vector_y = 0
@@ -53,6 +54,11 @@ class Monster(gfx.Drawable):
     self.y = self.base_y + self.vector_y * self.position
     self.rect.center = (self.x, self.y)
 
+  def look_again_for_tunnel_entry(self):
+    if not self.tunnel_entered:
+      self.current_node_index = None
+      self.find_next_waypoint()
+
   def find_next_waypoint(self):
     self.base_x = self.x
     self.base_y = self.y
@@ -62,6 +68,7 @@ class Monster(gfx.Drawable):
     if self.current_node_index == None:
       self.current_node_index = len(nodes) - 1
     else:
+      self.tunnel_entered = True
       if self.current_node_index <= 0:
         Global.yume.interface.crash()
         self.die()

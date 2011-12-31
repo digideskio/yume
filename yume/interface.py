@@ -1,6 +1,7 @@
 import os
 import pygame
 import time
+import itertools
 from pygame.locals import *
 from pygame import Rect
 from yume.resource import *
@@ -12,7 +13,7 @@ from yume import gfx
 
 class Interface(object):
   def __init__(self):
-    self.mana_max = 300.0
+    self.mana_max = 500.0
     self.mana = 300.0
     self.mana_regen = 0.1
     self.adren = 0.0
@@ -110,6 +111,10 @@ class Interface(object):
     self.renderer2.draw(screen)
     if self.dragging and self.dragged_surface:
       screen.blit(self.dragged_surface, pygame.mouse.get_pos())
+
+    self.draw_console(screen)
+
+  def draw_console(self, screen):
     x, y = 0, SCREEN_HEIGHT
     color = 255
     for text in Global.yume.log_entries:
@@ -117,13 +122,6 @@ class Interface(object):
       text = self.font.render(text, 1, (color, color, color))
       color -= 24
       screen.blit(text, (x, y))
-#    y = ARENA_TOP_POS + self.arena.delay * 10
-#    for wave in self.arena.level.waves:
-#      if y > ARENA_HEIGHT:
-#        break
-#      rect = Rect((0, y), (20, 20))
-#      pygame.draw.rect(screen, (100, 0, 100), rect)
-#      y += max(25, wave.delay * 10)
 
   def click(self, pos, button):
     if button == 1:
@@ -169,13 +167,13 @@ class Arena(object):
     self.load_level(Level1)
 
   def pos_to_cell(self, x, y):
-    x = int((x + ARENA_LEFT_POS) / 25)
-    y = int((y + ARENA_TOP_POS) / 25)
+    x = int((x - ARENA_LEFT_POS) / 25)
+    y = int((y - ARENA_TOP_POS) / 25)
     return x, y
 
   def cell_to_pos(self, x, y):
-    x = int(x * 25 - ARENA_LEFT_POS + 1)
-    y = int(y * 25 - ARENA_TOP_POS + 1)
+    x = int(x * 25 + ARENA_LEFT_POS + 1)
+    y = int(y * 25 + ARENA_TOP_POS + 1)
     return x, y
 
   def load_level(self, cls):
@@ -190,6 +188,7 @@ class Arena(object):
     self.projectiles = list()
     self.towers = list()
     self.brain = None
+    self.nodes = []
     self.monsters_left = set()
     self.grid = self.level.make_grid((100, 0, 0))
     Global.yume.log("Press 0 and place your brain to start the game")
@@ -198,24 +197,45 @@ class Arena(object):
     if issubclass(obj, Tower):
       x, y = self.pos_to_cell(pos[0], pos[1])
       pos = x, y
-      pos_ = x - 2, y - 2
-      if pos_ in self.tower_positions:
+      if pos not in self.tower_positions:
         Global.yume.log("Invalid position")
         return False
+      elif obj == TowerNode and not self.node_allowed_here(x, y):
+        Global.yume.log("Out of range")
+        return False
+      elif self.tower_positions[pos]:
+        Global.yume.log("There is already a tower on this position!")
+        return False
       else:
-        self.tower_positions[pos] = self.createTower(obj, self.cell_to_pos(x, y))
+        self.tower_positions[pos] = self.createTower(obj, (x, y))
       return True
 
   def createTower(self, cls, pos):
     tower = cls()
-    tower.move(*pos)
+    (a, b) = self.cell_to_pos(pos[0], pos[1])
+    tower.move((a, b), pos)
     self.towers.append(tower)
     if cls == TowerBrain:
       self.brain = tower
       self.nodes = [tower]
     elif cls == TowerNode:
+      self.build_node(tower)
       self.nodes.append(tower)
+      for monster in self.creeps:
+        monster.look_again_for_tunnel_entry()
     return tower
+
+  def build_node(self, tower):
+    last_node = self.nodes[-1]
+    self.nodes.append(tower)
+    nodex, nodey = last_node.gridpos
+    mousex, mousey = tower.gridpos
+    for x in range(40):
+      for y in range(28):
+        if self.node_path(nodex, nodey, x, y, mousex, mousey):
+          self.tower_positions[(x, y)] = 1
+    for monster in self.creeps:
+      monster.look_again_for_tunnel_entry()
 
   def update(self):
     self.renderer.update()
@@ -251,19 +271,86 @@ class Arena(object):
 
   def draw(self, screen):
     screen.blit(self.background.surface, (0, 0))
-#    screen.blit(self.background.surface, (5, 5))
     self.bg_tick += 1
     if self.bg_tick >= 3:
       self.background.next_frame()
       self.bg_tick = 0
     if Global.face.dragging:
-      screen.blit(self.grid, (ARENA_TOP_POS, ARENA_LEFT_POS))
+      if Global.face.dragging == TowerNode:
+        self.draw_node_info(screen)
+      screen.blit(self.grid, (ARENA_LEFT_POS, ARENA_TOP_POS))
     for tower in list(self.towers):
       tower.draw(screen)
     for creep in self.creeps:
       creep.draw(screen)
     for projectile in self.projectiles:
       projectile.draw(screen)
+
+  def draw_node_info(self, screen):
+    if not self.nodes:
+      return
+    last_node = self.nodes[-1]
+    nodex, nodey = last_node.gridpos
+    mousex, mousey = pygame.mouse.get_pos()
+    mousex, mousey = self.pos_to_cell(mousex, mousey)
+    for x in range(40):
+      for y in range(28):
+        if self.node_allowed_here(x, y):
+          a, b = self.cell_to_pos(x, y)
+          intunnel = self.node_path(nodex, nodey, x, y, mousex, mousey)
+          color = (0, 0, 50) if intunnel else (50, 0, 0)
+          pygame.draw.rect(screen, color, Rect(a, b, 25, 25))
+
+  def node_path(self, nodex, nodey, cellx, celly, mousex, mousey):
+    #      b    /
+    #    *----/
+    #  a |\ /
+    #    |/  dist
+    #   / line(x) = m * x + c
+    # /
+    try:
+      dx = mousex - nodex
+      dy = mousey - nodey
+
+      m = float(dy) / dx
+      c = nodey - m * nodex
+      a = celly - (m * cellx + c)
+
+      m = float(dx) / dy
+      c = nodex - m * nodey
+      b = cellx - (m * celly + c)
+
+      h = sqrt((a*a * b*b) / (a*a + b*b))
+      result = h < 0.9
+    except ZeroDivisionError:
+      result = True
+    if result:
+      topleftx = min(nodex, mousex)
+      toplefty = min(nodey, mousey)
+      bottomrightx = max(nodex, mousex)
+      bottomrighty = max(nodey, mousey)
+      if cellx >= topleftx and cellx <= bottomrightx and\
+          celly >= toplefty and celly <= bottomrighty:
+        return True
+    return False
+
+#    angle = atan2(diffx, diffy)
+#    vectorx = cos(angle)
+#    vectory = sin(angle)
+#    vectorlen = sqrt(vector[0] ** 2 + vector[1] ** 2)
+#    unitvectorx = vectorx / vectorlen
+#    unitvectory = vectory / vectorlen
+
+  def node_allowed_here(self, x, y):
+    if not self.nodes:
+      return False
+    pos = x, y
+    if pos not in self.tower_positions:
+      return False
+    if self.tower_positions[pos]:
+      return False
+    node = self.nodes[-1]
+    return 4.3 > sqrt((node.gridpos[0] - x) ** 2 + (node.gridpos[1] - y) ** 2)
 
   def spawn(self, mon):
     self.creeps.append(mon)

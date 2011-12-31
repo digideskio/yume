@@ -53,12 +53,12 @@ class ProjectileBullet(Projectile):
     self.traveled_distance += 1
     if self.traveled_distance >= self.distance:
       return self.destroy()
-    monsters = list(Global.face.get_monsters_in_range(self.x, self.y, self.aoe))
-    if monsters:
-      i = 0
-      for monster in monsters:
-        monster.damage(self.damage, self.origin)
-        i += 1
-        if i >= self.hits:
-          break
-      self.destroy()
+#    monsters = list(Global.face.get_monsters_in_range(self.x, self.y, self.aoe))
+#    if monsters:
+#      i = 0
+#      for monster in monsters:
+#        monster.damage(self.damage, self.origin)
+#        i += 1
+#        if i >= self.hits:
+#          break
+#      self.destroy()

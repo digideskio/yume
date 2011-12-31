@@ -13,9 +13,10 @@ class Tower(gfx.Drawable):
     gfx.Drawable.__init__(self)
     self.rect = Rect(0, 0, self.gfx.width, self.gfx.height)
 
-  def move(self, x, y):
-    self.x, self.y = x, y
-    self.rect.topleft = x, y
+  def move(self, pos, gridpos):
+    self.x, self.y = pos
+    self.rect.topleft = pos
+    self.gridpos = gridpos
 
   def shoot(self, monster):
     Global.arena.projectiles.append(self.projectile(self, monster))
@@ -31,7 +32,7 @@ class TowerBubble(Tower):
   cooldown_step = 1
   range = 100
   damage = 4
-  special_chance = 0.01
+  special_chance = 0.03
   projectile = ProjectileBullet
 
   def __init__(self):

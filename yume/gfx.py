@@ -35,6 +35,7 @@ class GFX(object):
 def get_gfx(name, args, transparency=False):
   key = (name, args)
   if key not in _gfx_cache:
+    Global.yume.log("drawing %s" % name)
     surfaces = _draw_gfx(name, args, transparency)
     _gfx_cache[key] = surfaces
   else:
@@ -83,7 +84,7 @@ class Bullet(GFX):
 class Bubble(GFX):
   height = 5
   width = 5
-  frames = 4
+  frames = 1
 #  foo = [(4, 2), (2, 4), (0, 2), (2, 0)]
 
   def __init__(self, args):
