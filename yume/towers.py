@@ -42,6 +42,16 @@ class TowerBubble(Tower):
     self.phase = 0
     self.freq = 0
     self.freq2 = 0
+    self.animate = False
+
+  def draw(self, screen):
+    screen.blit(self.gfx.surface, (self.x, self.y))
+    if self.animate:
+      self.gfx.next_frame()
+      if self.gfx.current_frame == 0:
+        self.animate = False
+    else:
+      self.gfx.current_frame = 0
 
   def update(self):
     if self.cooldown_tick > 0:
@@ -66,6 +76,7 @@ class TowerBubble(Tower):
         for i in range(3):
           self.phase += self.freq * sin(self.freq2 * self.special_hits)
           self.shoot((x + self.range * sin(self.phase), y + self.range * cos(self.phase)))
+          self.animate = True
           self.special_hits -= 1
         self.cooldown_tick = 1
       else:
@@ -76,6 +87,11 @@ class TowerBubble(Tower):
           monsters = random.sample(monsters, 1)
         for monster in monsters:
           self.shoot(monster)
+
+  def shoot(self, monster):
+    Tower.shoot(self, monster)
+    self.animate = True
+    self.gfx.current_frame = 2
 
 class TowerBrain(Tower):
   graphic = gfx.TowerBrain

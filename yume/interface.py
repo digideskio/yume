@@ -162,6 +162,8 @@ class Arena(object):
         ARENA_LEFT_POS + ARENA_WIDTH, ARENA_TOP_POS + ARENA_HEIGHT)
     self.renderer = pygame.sprite.RenderPlain([])
     self._cache = {}
+    self.surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    self.surface.set_colorkey((0, 0, 0))
 
     self.background = get_gfx(gfx.Background, (1, 1))
     self.bg_tick = 0
@@ -236,6 +238,10 @@ class Arena(object):
       for y in range(28):
         if self.node_path(nodex, nodey, x, y, mousex, mousey):
           self.tower_positions[(x, y)] = 1
+    pygame.draw.line(self.surface, (200, 200, 200),
+        (last_node.x + 12, last_node.y + 12),
+        (tower.x + 12, tower.y + 12), 3)
+    self.surface = self.surface.convert_alpha()
     for monster in self.creeps:
       monster.look_again_for_tunnel_entry()
 
@@ -281,6 +287,7 @@ class Arena(object):
       if Global.face.dragging == TowerNode:
         self.draw_node_info(screen)
       screen.blit(self.grid, (ARENA_LEFT_POS, ARENA_TOP_POS))
+    screen.blit(self.surface, (0, 0))
     for tower in list(self.towers):
       tower.draw(screen)
     for creep in self.creeps:
@@ -325,7 +332,7 @@ class Arena(object):
       b = cellx - (m * celly + c)
 
       h = sqrt((a*a * b*b) / (a*a + b*b))
-      if h >= 0.9:
+      if h >= 0.5:
         return False
     except ZeroDivisionError:
       pass
@@ -338,13 +345,6 @@ class Arena(object):
       return True
     return False
 
-#    angle = atan2(diffx, diffy)
-#    vectorx = cos(angle)
-#    vectory = sin(angle)
-#    vectorlen = sqrt(vector[0] ** 2 + vector[1] ** 2)
-#    unitvectorx = vectorx / vectorlen
-#    unitvectory = vectory / vectorlen
-
   def node_allowed_here(self, x, y):
     if not self.nodes:
       return False
@@ -354,7 +354,8 @@ class Arena(object):
     if self.tower_positions[pos]:
       return False
     node = self.nodes[-1]
-    if sqrt((node.gridpos[0] - x) ** 2 + (node.gridpos[1] - y) ** 2) >= 4.3:
+    distance = sqrt((node.gridpos[0] - x) ** 2 + (node.gridpos[1] - y) ** 2)
+    if distance >= 4.3 or distance <= 1:
       return False
     last_node = self.nodes[-1]
     nodex, nodey = last_node.gridpos

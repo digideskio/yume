@@ -35,7 +35,7 @@ class GFX(object):
 def get_gfx(name, args, transparency=False):
   key = (name, args)
   if key not in _gfx_cache:
-    Global.yume.log("drawing %s" % name)
+#    Global.yume.log("drawing %s" % name)
     surfaces = _draw_gfx(name, args, transparency)
     _gfx_cache[key] = surfaces
   else:
@@ -154,6 +154,7 @@ class TowerBrain(GFX):
 class TowerNode(GFX):
   height = 24
   width = 24
+  frames = 32
 
   def __init__(self, args):
     self.scale, self.rotation = args
@@ -163,7 +164,12 @@ class TowerNode(GFX):
     self.width = int(self.width * self.scale)
 
   def draw_frame(self, surface, n):
-    circle(surface, (0, 255, 0), (12, 12), 8)
+    layer = pygame.Surface((self.width, self.height))
+    circle(layer, (255, 255, 255), (12, 12), 8)
+#    circle(layer, (255, 255, 200), (12, 12), 4)
+    wid = int(self.width * (cos(n*2*pi/self.frames) + 4) / 5.0)
+    hei = int(self.height * (cos(n*2*pi/self.frames) + 4) / 5.0)
+    surface.blit(pygame.transform.smoothscale(layer, (wid, hei)), (self.width/2 - wid/2, self.height/2 - hei/2))
 
 class Background(GFX):
   width = SCREEN_WIDTH

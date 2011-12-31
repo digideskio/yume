@@ -13,8 +13,12 @@ class Monster(gfx.Drawable):
   graphic = gfx.MonsterGFX
   transparent = True
 
+  def draw(self, screen):
+    screen.blit(self.gfx.surface, (self.x + 9, self.y + 9))
+    self.gfx.next_frame()
+
   def __init__(self, gene, arena):
-    print("monster created")
+#    print("monster created")
     gfx.Drawable.__init__(self)
     self.stagger = 0
     self.waypoint_index = 1
