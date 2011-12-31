@@ -10,6 +10,7 @@ from yume.levels import *
 from yume.towers import *
 from yume import *
 from yume import gfx
+from yume.lib import cached_method
 
 class Interface(object):
   def __init__(self):
@@ -160,6 +161,7 @@ class Arena(object):
     self.rect = Rect(ARENA_LEFT_POS, ARENA_TOP_POS,
         ARENA_LEFT_POS + ARENA_WIDTH, ARENA_TOP_POS + ARENA_HEIGHT)
     self.renderer = pygame.sprite.RenderPlain([])
+    self._cache = {}
 
     self.background = get_gfx(gfx.Background, (1, 1))
     self.bg_tick = 0
@@ -298,9 +300,10 @@ class Arena(object):
         if self.node_allowed_here(x, y):
           a, b = self.cell_to_pos(x, y)
           intunnel = self.node_path(nodex, nodey, x, y, mousex, mousey)
-          color = (0, 0, 50) if intunnel else (50, 0, 0)
+          color = (0, 0, 50) if intunnel else (0, 50, 0)
           pygame.draw.rect(screen, color, Rect(a, b, 25, 25))
 
+  @cached_method
   def node_path(self, nodex, nodey, cellx, celly, mousex, mousey):
     #      b    /
     #    *----/
@@ -308,6 +311,7 @@ class Arena(object):
     #    |/  dist
     #   / line(x) = m * x + c
     # /
+#    print("calculating for %d %d %d %d %d %d" % (nodex, nodey, cellx, celly, mousex, mousey))
     try:
       dx = mousex - nodex
       dy = mousey - nodey
@@ -321,17 +325,17 @@ class Arena(object):
       b = cellx - (m * celly + c)
 
       h = sqrt((a*a * b*b) / (a*a + b*b))
-      result = h < 0.9
+      if h >= 0.9:
+        return False
     except ZeroDivisionError:
-      result = True
-    if result:
-      topleftx = min(nodex, mousex)
-      toplefty = min(nodey, mousey)
-      bottomrightx = max(nodex, mousex)
-      bottomrighty = max(nodey, mousey)
-      if cellx >= topleftx and cellx <= bottomrightx and\
-          celly >= toplefty and celly <= bottomrighty:
-        return True
+      pass
+    topleftx = min(nodex, mousex)
+    toplefty = min(nodey, mousey)
+    bottomrightx = max(nodex, mousex)
+    bottomrighty = max(nodey, mousey)
+    if cellx >= topleftx and cellx <= bottomrightx and\
+        celly >= toplefty and celly <= bottomrighty:
+      return True
     return False
 
 #    angle = atan2(diffx, diffy)
@@ -350,7 +354,18 @@ class Arena(object):
     if self.tower_positions[pos]:
       return False
     node = self.nodes[-1]
-    return 4.3 > sqrt((node.gridpos[0] - x) ** 2 + (node.gridpos[1] - y) ** 2)
+    if sqrt((node.gridpos[0] - x) ** 2 + (node.gridpos[1] - y) ** 2) >= 4.3:
+      return False
+    last_node = self.nodes[-1]
+    nodex, nodey = last_node.gridpos
+    mousex, mousey = x, y
+    for x in range(nodex-5, nodex+5):
+      for y in range(nodey-5, nodey+5):
+        if (x, y) in self.tower_positions:
+          if self.node_path(nodex, nodey, x, y, mousex, mousey):
+            if (x, y) != (nodex, nodey) and self.tower_positions[(x, y)]:
+              return False
+    return True
 
   def spawn(self, mon):
     self.creeps.append(mon)
