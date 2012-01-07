@@ -100,7 +100,8 @@ class TowerBubble(Tower):
 class TowerBrain(Tower):
   graphic = gfx.TowerBrain
   transparent = True
-  cost = 200
+  cost = 0
+  adrenaline_cost = 50
   cooldown = 20
 
   def draw(self, screen):
@@ -111,8 +112,9 @@ class TowerBrain(Tower):
 class TowerNode(Tower):
   graphic = gfx.TowerNode
   transparent = True
-  cost = 2
+  cost = 0
   cooldown = 20
+  adrenaline_cost = 30
 
   def update(self):
     pass

@@ -26,7 +26,7 @@ def manabar_pos_transform(mana):
 
 class Interface(object):
   def __init__(self):
-    self.mana = 300.0
+    self.mana = 100.0
     self.mana_regen = 0.1
     self.adren = 0.0
     self.adren_max = 100.0
@@ -39,9 +39,11 @@ class Interface(object):
     Global.arena = self.arena
     self.last_update = time.time()
     self.font = get_font()
+    self.game_over = False
 
     self.adrenbar = get_gfx(gfx.AdrenalineBar, (1, ))
     self.adrenbar_x = -self.adrenbar.width
+    self.adren_costbar = get_gfx(gfx.AdrenalineCostBar, (1, ))
     self.manabar = get_gfx(gfx.ManaBar, (1, ))
     self.manabar_x = -self.manabar.width
     self.costbar = get_gfx(gfx.CostBar, (1, ))
@@ -71,6 +73,8 @@ class Interface(object):
   def update(self):
     dt = time.time() - self.last_update
     self.last_update = time.time()
+    if self.game_over:
+      return
     self.mana = max(0, self.mana + self.mana_regen * dt)
 
     # adrenaline foo
@@ -90,7 +94,10 @@ class Interface(object):
   def crash(self):
     self.adren_baseline += 10
     self.adren += 10
-    self.mana = int(self.mana * 0.8)
+    if self.adren >= self.adren_max or self.adren_baseline >= self.adren_max:
+      Global.yume.log("You woke up!!")
+      self.game_over = True
+#    self.mana = int(self.mana * 0.8)
 
   def distance_between(self, x1, y1, x2, y2):
     return sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
@@ -127,6 +134,17 @@ class Interface(object):
     screen.blit(self.manabar.surface, (manapos, 2))
     self.manabar.next_frame()
 
+    if self.dragging:
+      pos = manabar_pos_transform(self.dragging.cost) * self.costbar.width - self.costbar.width + 40
+      self.costbar_x = pos, 2
+      screen.blit(self.costbar.surface, (pos, 5))
+      self.costbar.next_frame()
+
+      pos = self.adrenbar.width / self.adren_max * min(self.adren_max, self.adren + self.dragging.adrenaline_cost) - self.adrenbar.width + 40
+      screen.blit(self.adren_costbar.surface, (pos, 22))
+
+#    adren = self.adren + self.dragging.adrenaline_cost if self.dragging else self.adren
+#    adren = min(self.adren_max, adren)
     adrenpos = self.adrenbar.width / self.adren_max * self.adren - self.adrenbar.width + 40
     current_adrenpos = self.adrenbar_x
     diff = current_adrenpos - adrenpos
@@ -136,13 +154,6 @@ class Interface(object):
     screen.blit(self.adrenbar.surface, (adrenpos, 22))
     self.adrenbar.next_frame()
 
-    if self.dragging:
-#      pos = max(0, min(self.costbar.width, log(self.dragging.cost + offset, logbase))) - self.costbar.width + 40 - log(offset, logbase)
-      pos = manabar_pos_transform(self.dragging.cost) * self.costbar.width - self.costbar.width + 40
-#      pos = self.costbar.width / self.mana_max * self.dragging.cost - self.costbar.width + 40
-      self.costbar_x = pos, 2
-      screen.blit(self.costbar.surface, (pos, 5))
-      self.costbar.next_frame()
 
     if self.dragging and self.dragged_surface:
       screen.blit(self.dragged_surface, pygame.mouse.get_pos())
@@ -196,10 +207,14 @@ class Interface(object):
       if self.arena.rect.collidepoint(pos):
         if self.dragging:
           if self.mana >= self.dragging.cost:
-            released = self.arena.release(self.dragging, pos)
-            if released:
-              self.mana -= self.dragging.cost
-              self.undrag()
+            if self.adren_max - self.adren > self.dragging.adrenaline_cost:
+              released = self.arena.release(self.dragging, pos)
+              if released:
+                self.mana -= self.dragging.cost
+                self.adren += self.dragging.adrenaline_cost
+                self.undrag()
+            else:
+              Global.yume.log("Too much adrenaline!")
           else:
             Global.yume.log("Not enough mana!")
     if self.dragging:
@@ -334,6 +349,9 @@ class Arena(object):
 
       for projectile in list(self.projectiles):
         projectile.update()
+
+      if Global.face.game_over:
+        return
 
       if self.monster_timer > 0:
         self.monster_timer -= dt

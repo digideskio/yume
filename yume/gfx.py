@@ -324,6 +324,18 @@ class AdrenalineBar(GFX):
     pygame.surfarray.blit_array(surface, ary)
 #    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
 
+class AdrenalineCostBar(GFX):
+  width = base_width = SCREEN_WIDTH - 40
+  height = 6
+  frames = 50
+
+  def __init__(self, args):
+    self.scale = args[0]
+    self.width = self.scale * self.base_width
+
+  def draw_frame(self, surface, n):
+    rect(surface, (170 , 170, 30), Rect(0, 0, self.width, self.height))
+
 class UIGFX(GFX):
   width = 100
   height = SCREEN_HEIGHT
