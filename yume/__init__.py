@@ -1,6 +1,8 @@
 class Global(object):
   pass
 
+TEST_MODE = True
+
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 768
 ARENA_LEFT_POS = 30

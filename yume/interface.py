@@ -145,7 +145,7 @@ class Interface(object):
 
 #    adren = self.adren + self.dragging.adrenaline_cost if self.dragging else self.adren
 #    adren = min(self.adren_max, adren)
-    adrenpos = self.adrenbar.width / self.adren_max * self.adren - self.adrenbar.width + 40
+    adrenpos = self.adrenbar.width / self.adren_max * min(self.adren_max, self.adren) - self.adrenbar.width + 40
     current_adrenpos = self.adrenbar_x
     diff = current_adrenpos - adrenpos
     if abs(diff) > 2:
@@ -247,7 +247,10 @@ class Arena(object):
     self.surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     self.surface.set_colorkey((0, 0, 0))
 
-    self.background = get_gfx(gfx.Background, (1, 1))
+    if TEST_MODE:
+      self.background = get_gfx(gfx.TestBackground, (1, 1))
+    else:
+      self.background = get_gfx(gfx.Background, (1, 1))
     self.bg_tick = 0
 
   def pos_to_cell(self, x, y):
@@ -307,8 +310,6 @@ class Arena(object):
     elif cls == TowerNode:
       self.build_node(tower)
       self.nodes.append(tower)
-      for monster in self.creeps:
-        monster.look_again_for_tunnel_entry()
     elif cls == TowerBubble:
       bubbles = sum(isinstance(tower, TowerBubble) for tower in self.towers)
       TowerBubble.special_chance = 0.03 / bubbles
@@ -382,6 +383,7 @@ class Arena(object):
       tower.draw(screen)
     for creep in self.creeps:
       creep.draw(screen)
+      creep.draw_hp_bar(screen)
     for projectile in self.projectiles:
       projectile.draw(screen)
 

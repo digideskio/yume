@@ -13,8 +13,12 @@ class Monster(gfx.Drawable):
   transparent = True
 
   def draw(self, screen):
-    screen.blit(self.gfx.surface, (self.x + 9, self.y + 9))
+    screen.blit(self.gfx.surface, (self.x - self.gfx.width / 2, self.y - self.gfx.height / 2))
     self.gfx.next_frame()
+
+  def draw_hp_bar(self, screen):
+    wid = self.gfx.width * self.hp / self.max_hp
+    pygame.draw.line(screen, (255, 0, 0), (self.x - self.gfx.width / 2, self.y - self.gfx.height), (self.x - self.gfx.width / 2 + wid, self.y - self.gfx.height), 2)
 
   def __init__(self, gene, arena):
 #    print("monster created")
@@ -36,6 +40,7 @@ class Monster(gfx.Drawable):
     # find starting position
     r = arena.rect
     self.hp = (gene.count('a') + 1) * 10
+    self.max_hp = self.hp
     self.speed = 1 + (gene.count('g') * 0.1)
     self.worth = log(len(gene) + 2)
 
@@ -79,8 +84,8 @@ class Monster(gfx.Drawable):
         self.current_node_index -= 1
 
     node = nodes[self.current_node_index]
-    x = node.x - self.x
-    y = node.y - self.y
+    x = node.x + 12 - self.x
+    y = node.y + 12 - self.y
     rotation = atan2(y, x)
     self.vector_x = cos(rotation)
     self.vector_y = sin(rotation)

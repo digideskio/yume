@@ -156,7 +156,7 @@ class TowerBrain(GFX):
 
   def draw_frame(self, surface, n):
     layer = pygame.Surface((self.width * 4, self.height * 4))
-    circle(layer, (1 + (n % 2) * 254, ((n % 4) < 2) * 255, (n < 4) * 255), (48, 48), 48)
+    circle(layer, (1 + (n % 2) * 154, ((n % 4) < 2) * 155, (n < 4) * 155), (48, 48), 48)
     surface.blit(pygame.transform.smoothscale(layer, (self.width, self.height)), (0, 0))
 #    circle(surface, (255, 0, 0), (12, 12), 12)
 
@@ -181,6 +181,17 @@ class TowerNode(GFX):
 #    wid = int(self.width * (cos(n*2*pi/self.frames) + 4) / 5.0)
 #    hei = int(self.height * (cos(n*2*pi/self.frames) + 4) / 5.0)
     surface.blit(pygame.transform.smoothscale(layer, (self.width, self.height)), (0, 0))
+
+class TestBackground(GFX):
+  width = SCREEN_WIDTH
+  height = SCREEN_HEIGHT
+  frames = 1
+
+  def __init__(self, args):
+    self.scale, _ = args
+
+  def draw_frame(self, surface, n):
+    surface.fill((0, 0, 0))
 
 class Background(GFX):
   width = SCREEN_WIDTH
