@@ -7,7 +7,6 @@ from pygame import Rect
 from yume import gfx
 
 class Monster(gfx.Drawable):
-  worth = 4
   hp = 10
   speed = 1
   graphic = gfx.MonsterGFX
@@ -38,7 +37,7 @@ class Monster(gfx.Drawable):
     r = arena.rect
     self.hp = (gene.count('a') + 1) * 10
     self.speed = 1 + (gene.count('g') * 0.1)
-    worth = log(len(gene) + 2)
+    self.worth = log(len(gene) + 2)
 
     ep = arena.level.entry_points
     x, y = ep[gene.count('t') % len(ep)]

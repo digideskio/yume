@@ -2,19 +2,30 @@ import os
 import pygame
 import time
 import itertools
+from math import *
 from pygame.locals import *
 from pygame import Rect
 from yume.resource import *
 from yume.gfx import get_gfx
 from yume.levels import *
 from yume.towers import *
+from yume.widgets import MenuButton
 from yume import *
 from yume import gfx
-from yume.lib import cached_method
+from yume.lib import cached_method, OpenStruct
+
+def manabar_pos_transform(mana):
+#  return x/400 if x <= 200 else (log(x/2000.0+1)+0.405 if x <= 1000 else x/20000 + 0.76)
+  if mana <= 200:
+    return mana / 400.0
+  if mana <= 1000:
+    return log(mana/2000.0+1)+0.405 
+  if mana < 4800:
+    return mana / 20000 + 0.76
+  return 1
 
 class Interface(object):
   def __init__(self):
-    self.mana_max = 500.0
     self.mana = 300.0
     self.mana_regen = 0.1
     self.adren = 0.0
@@ -26,8 +37,6 @@ class Interface(object):
     self.dragged_surface = None
     self.arena = Arena()
     Global.arena = self.arena
-    self.wave_marker = pygame.Surface((30, ARENA_HEIGHT))
-    self.renderer2 = pygame.sprite.RenderPlain([])
     self.last_update = time.time()
     self.font = get_font()
 
@@ -38,16 +47,36 @@ class Interface(object):
     self.costbar = get_gfx(gfx.CostBar, (1, ))
     self.costbar_x = -self.costbar.width
 
+    self.initialize_buttons()
+    self.load_level(Level1)
+
+  def load_level(self, level):
+    self.arena.load_level(level)
+    self.menu = [self.button_definitions.brain]
+#    Global.yume.log("Press 0 and place your brain to start the game")
+
+  def initialize_buttons(self):
+    buttons = OpenStruct()
+    buttons['bubble'] = button = MenuButton(gfx.TowerBubbleGFX)
+    button.action = lambda: Global.face.press(K_1)
+    button.tooltip = "Create a Bubble Tower"
+    buttons['brain'] = button = MenuButton(gfx.TowerBrain)
+    button.action = lambda: Global.face.press(K_0)
+    button.tooltip = "Create a Brain"
+    buttons['node'] = button = MenuButton(gfx.TowerNode)
+    button.action = lambda: Global.face.press(K_9)
+    button.tooltip = "Create a Node"
+    self.button_definitions = buttons
+
   def update(self):
     dt = time.time() - self.last_update
     self.last_update = time.time()
-    self.mana = max(0, min(self.mana + self.mana_regen * dt, self.mana_max))
+    self.mana = max(0, self.mana + self.mana_regen * dt)
 
     # adrenaline foo
     self.adren_baseline = max(0, min(self.adren_baseline +
       self.adren_baseline_regen * dt, self.adren_max))
     if self.adren >= self.adren_max:
-      Global.yume.log("YOU DIE!!11")
       self.adren = self.adren_max
     else:
       diff = self.adren - self.adren_baseline
@@ -84,7 +113,12 @@ class Interface(object):
     self.arena.update()
     self.arena.draw(screen)
 
-    manapos = self.manabar.width / self.mana_max * self.mana - self.manabar.width
+    offset = 10
+    logbase = 1.1
+
+#    manapos = self.manabar.width / self.mana_max * self.mana - self.manabar.width + 40
+    manapos = manabar_pos_transform(self.mana) * self.manabar.width - self.manabar.width + 40
+#    manapos = self.manabar.width / self.mana_max * self.mana - self.manabar.width + 40
     current_manapos = self.manabar_x
     diff = current_manapos - manapos
     if abs(diff) > 2:
@@ -93,7 +127,7 @@ class Interface(object):
     screen.blit(self.manabar.surface, (manapos, 2))
     self.manabar.next_frame()
 
-    adrenpos = self.adrenbar.width / self.adren_max * self.adren - self.adrenbar.width
+    adrenpos = self.adrenbar.width / self.adren_max * self.adren - self.adrenbar.width + 40
     current_adrenpos = self.adrenbar_x
     diff = current_adrenpos - adrenpos
     if abs(diff) > 2:
@@ -103,17 +137,24 @@ class Interface(object):
     self.adrenbar.next_frame()
 
     if self.dragging:
-      pos = self.costbar.width / self.mana_max * self.dragging.cost - self.costbar.width
+#      pos = max(0, min(self.costbar.width, log(self.dragging.cost + offset, logbase))) - self.costbar.width + 40 - log(offset, logbase)
+      pos = manabar_pos_transform(self.dragging.cost) * self.costbar.width - self.costbar.width + 40
+#      pos = self.costbar.width / self.mana_max * self.dragging.cost - self.costbar.width + 40
       self.costbar_x = pos, 2
-      screen.blit(self.costbar.surface, (pos, 2))
+      screen.blit(self.costbar.surface, (pos, 5))
       self.costbar.next_frame()
 
-    self.renderer2.update()
-    self.renderer2.draw(screen)
     if self.dragging and self.dragged_surface:
       screen.blit(self.dragged_surface, pygame.mouse.get_pos())
 
     self.draw_console(screen)
+    self.draw_status(screen)
+
+    x, y = 0, 0
+#    x, y = SCREEN_WIDTH - MenuButton.width, 0
+    for button in self.menu:
+      button.draw(screen, (x, y))
+      y += button.height
 
   def draw_console(self, screen):
     x, y = 0, SCREEN_HEIGHT
@@ -124,8 +165,34 @@ class Interface(object):
       color -= 24
       screen.blit(text, (x, y))
 
+  def draw_status(self, screen):
+    y = 50
+    def round_(f):
+      return int(f * 10) / 10.0
+
+    data = dict(fps = round_(Global.yume.clock.get_fps()),
+        mana = round_(self.mana),
+        adrenaline = round_(self.adren),
+        adrenalinemax = self.adren_max,
+        gene = self.arena.level.gene,
+        score = 0)
+    status_template = STATUS_TEMPLATE.format(**data)
+    for line in status_template.split("\n"):
+      text = self.font.render(line, 1, (200, 200, 200))
+      x = SCREEN_WIDTH - text.get_rect().width
+      screen.blit(text, (x, y))
+      y += text.get_rect().height + 2
+
   def click(self, pos, button):
     if button == 1:
+      if pos[0] <= MenuButton.width:
+        try:
+          button = self.menu[int(pos[1] / MenuButton.height)]
+        except:
+          pass
+        else:
+          button.action()
+          return
       if self.arena.rect.collidepoint(pos):
         if self.dragging:
           if self.mana >= self.dragging.cost:
@@ -154,7 +221,7 @@ class Interface(object):
 
   def drag(self, obj):
     self.dragging = obj
-    self.dragged_surface = get_gfx(obj.graphic, (0, 0)).surface
+    self.dragged_surface = get_gfx(obj.graphic, (1, 1), transparency=True).surface
 
 class Arena(object):
   def __init__(self):
@@ -167,8 +234,6 @@ class Arena(object):
 
     self.background = get_gfx(gfx.Background, (1, 1))
     self.bg_tick = 0
-
-    self.load_level(Level1)
 
   def pos_to_cell(self, x, y):
     x = int((x - ARENA_LEFT_POS) / 25)
@@ -195,7 +260,6 @@ class Arena(object):
     self.nodes = []
     self.monsters_left = set()
     self.grid = self.level.make_grid((100, 0, 0))
-    Global.yume.log("Press 0 and place your brain to start the game")
 
   def release(self, obj, pos):
     if issubclass(obj, Tower):
@@ -222,11 +286,17 @@ class Arena(object):
     if cls == TowerBrain:
       self.brain = tower
       self.nodes = [tower]
+      Global.face.menu.remove(Global.face.button_definitions['brain'])
+      Global.face.menu.append(Global.face.button_definitions['bubble'])
+      Global.face.menu.append(Global.face.button_definitions['node'])
     elif cls == TowerNode:
       self.build_node(tower)
       self.nodes.append(tower)
       for monster in self.creeps:
         monster.look_again_for_tunnel_entry()
+    elif cls == TowerBubble:
+      bubbles = sum(isinstance(tower, TowerBubble) for tower in self.towers)
+      TowerBubble.special_chance = 0.03 / bubbles
     return tower
 
   def build_node(self, tower):
@@ -238,9 +308,11 @@ class Arena(object):
       for y in range(28):
         if self.node_path(nodex, nodey, x, y, mousex, mousey):
           self.tower_positions[(x, y)] = 1
-    pygame.draw.line(self.surface, (200, 200, 200),
-        (last_node.x + 12, last_node.y + 12),
-        (tower.x + 12, tower.y + 12), 3)
+    line_color = [(255, 255, 255), (200, 200, 200)]
+    line_origin = (last_node.x + 12, last_node.y + 12)
+    line_target = (tower.x + 12, tower.y + 12)
+    pygame.draw.line(self.surface, line_color[0], line_origin, line_target, 3)
+    pygame.draw.line(self.surface, line_color[1], line_origin, line_target, 1)
     self.surface = self.surface.convert_alpha()
     for monster in self.creeps:
       monster.look_again_for_tunnel_entry()
@@ -269,8 +341,8 @@ class Arena(object):
         monster = Monster(self.monsters_left.pop(), self)
         self.spawn(monster)
         self.monster_timer = 0.5
-      else:
-        Global.yume.log("Gene: %s" % self.level.gene)
+      elif not self.creeps:
+#        Global.yume.log("Gene: %s" % self.level.gene)
         self.monster_timer = 3
         self.monsters_left = self.level.get_monsters()
         self.level.mutate()
@@ -355,7 +427,7 @@ class Arena(object):
       return False
     node = self.nodes[-1]
     distance = sqrt((node.gridpos[0] - x) ** 2 + (node.gridpos[1] - y) ** 2)
-    if distance >= 4.3 or distance <= 1:
+    if distance >= 4.3 or distance <= 1.5:
       return False
     last_node = self.nodes[-1]
     nodex, nodey = last_node.gridpos

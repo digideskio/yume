@@ -1,5 +1,7 @@
 import pygame
 import numpy
+import time
+from sys import stderr
 from math import *
 from pygame import Rect
 from pygame.draw import *
@@ -35,7 +37,6 @@ class GFX(object):
 def get_gfx(name, args, transparency=False):
   key = (name, args)
   if key not in _gfx_cache:
-#    Global.yume.log("drawing %s" % name)
     surfaces = _draw_gfx(name, args, transparency)
     _gfx_cache[key] = surfaces
   else:
@@ -48,7 +49,10 @@ def get_gfx(name, args, transparency=False):
 def _draw_gfx(cls, args, transparency):
   gfx = cls(args)
   surfaces = []
+  t = time.time()
+  stderr.write("Drawing %s" % cls.__name__)
   for i in range(gfx.frames):
+    stderr.write(".")
     surface = pygame.Surface((gfx.width, gfx.height))
     if transparency:
       surface.set_colorkey((0, 0, 0))
@@ -57,6 +61,7 @@ def _draw_gfx(cls, args, transparency):
       surfaces.append(surface.convert_alpha())
     else:
       surfaces.append(surface.convert())
+  stderr.write(" (%fs)\n" % (time.time() - t))
   return surfaces
 
 def _periodic_blit(source, destination):
@@ -129,8 +134,8 @@ class TowerBubbleGFX(GFX):
   def draw_frame(self, surface, n):
 #    wid = self.width * (sin(n*pi/8) + 8) / 9.0
     layer = pygame.Surface((self.width, self.height))
-    circle(layer, (255, 255, 255), (12, 12), 12)
-    circle(layer, (0,   255, 0  ), (12, 12), 12, 1)
+    circle(layer, (150, 150, 255), (12, 12), 12)
+    circle(layer, (100, 100, 100), (12, 12), 12, 1)
     wid = self.width
     hei = int(self.height * (cos(n*pi/16) + 4) / 5.0)
     surface.blit(pygame.transform.smoothscale(layer, (wid, hei)), (0, self.height - hei))
@@ -140,6 +145,7 @@ class TowerBubbleGFX(GFX):
 class TowerBrain(GFX):
   height = 24
   width = 24
+  frames = 8
 
   def __init__(self, args):
     self.scale, self.rotation = args
@@ -149,12 +155,15 @@ class TowerBrain(GFX):
     self.width = int(self.width * self.scale)
 
   def draw_frame(self, surface, n):
-    circle(surface, (255, 0, 0), (12, 12), 12)
+    layer = pygame.Surface((self.width * 4, self.height * 4))
+    circle(layer, (1 + (n % 2) * 254, ((n % 4) < 2) * 255, (n < 4) * 255), (48, 48), 48)
+    surface.blit(pygame.transform.smoothscale(layer, (self.width, self.height)), (0, 0))
+#    circle(surface, (255, 0, 0), (12, 12), 12)
 
 class TowerNode(GFX):
   height = 24
   width = 24
-  frames = 32
+  frames = 64
 
   def __init__(self, args):
     self.scale, self.rotation = args
@@ -164,12 +173,14 @@ class TowerNode(GFX):
     self.width = int(self.width * self.scale)
 
   def draw_frame(self, surface, n):
-    layer = pygame.Surface((self.width, self.height))
-    circle(layer, (255, 255, 255), (12, 12), 8)
+    layer = pygame.Surface((self.width*4, self.height*4))
+    color = 225 + sin(n*2*pi/self.frames) * 30
+    circle(layer, (250, 250, 250), (48, 48), 20)
+    circle(layer, (color, color, color), (48, 48), 12)
 #    circle(layer, (255, 255, 200), (12, 12), 4)
-    wid = int(self.width * (cos(n*2*pi/self.frames) + 4) / 5.0)
-    hei = int(self.height * (cos(n*2*pi/self.frames) + 4) / 5.0)
-    surface.blit(pygame.transform.smoothscale(layer, (wid, hei)), (self.width/2 - wid/2, self.height/2 - hei/2))
+#    wid = int(self.width * (cos(n*2*pi/self.frames) + 4) / 5.0)
+#    hei = int(self.height * (cos(n*2*pi/self.frames) + 4) / 5.0)
+    surface.blit(pygame.transform.smoothscale(layer, (self.width, self.height)), (0, 0))
 
 class Background(GFX):
   width = SCREEN_WIDTH
@@ -235,7 +246,7 @@ class Background(GFX):
     _periodic_blit(layer, surface)
 
 class ManaBar(GFX):
-  width = base_width = SCREEN_WIDTH
+  width = base_width = SCREEN_WIDTH - 40
   height = 16
   frames = 1
 
@@ -260,7 +271,7 @@ class ManaBar(GFX):
 #    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
 
 class CostBar(GFX):
-  width = base_width = SCREEN_WIDTH
+  width = base_width = SCREEN_WIDTH - 40
   height = 16
   frames = 1
 
@@ -286,14 +297,15 @@ class CostBar(GFX):
 #    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
 
 class AdrenalineBar(GFX):
-  width = base_width = SCREEN_WIDTH
-  height = 16
+  width = base_width = SCREEN_WIDTH - 40
+  height = 6
   frames = 1
+#  frames = 16
 
   def __init__(self, args):
     self.scale = args[0]
     self.width = self.scale * self.base_width
-    self.height = 16
+#    self.height = 16
 
   def draw_frame(self, surface, n):
     ary = numpy.zeros((self.width, self.height), dtype=numpy.int32)
@@ -307,6 +319,19 @@ class AdrenalineBar(GFX):
             ary[x][y] = min(200, (v + 3 * (x - self.width + 50)))
           else:
             ary[x][y] = min(200, v)
-        ary[x][y] *= 16776960
+        ary[x][y] *= 256 * 256
+#        ary[x][y] *= 16776960
     pygame.surfarray.blit_array(surface, ary)
 #    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
+
+class UIGFX(GFX):
+  width = 100
+  height = SCREEN_HEIGHT
+  frames = 1
+
+  def __init__(self, args):
+    self.scale = args[0]
+
+  def draw_frame(self, surface, n):
+    rect(surface, (100, 100, 100), Rect(0, 0, self.width, self.height))
+    rect(surface, (200, 200, 200), Rect(10, 20, self.width-20, 300))

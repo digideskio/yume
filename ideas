@@ -37,6 +37,9 @@ the turret and can also be obtained by killing enough monsters.  local upgrades
 should NEVER be bad, so they should increase something like damage.  global
 upgrades can be bad depending on the players strategy.
 
+Shield-monsters which do not cause life loss when they come through but instead
+distract the towers by eating bullets.  Certain towers can shoot through them.
+
 Monsters randomly drop powerups when die
 
 Monsters mutate to counter the players strategy
@@ -102,10 +105,11 @@ Items:
     Duratoin: 2 minutes
     + Quadruples Mana Regeneration
     + Halves the Mana spent on spells
-- Painkillers:
+- Sedative:
     Duration: 1 minute
     o Doubles Adrenaline reuptake
     + Reduces impact of Monsters on Adrenaline
     - Halves Mana regeneration
+
 cancel-button to stop the game
 speed up button

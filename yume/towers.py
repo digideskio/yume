@@ -13,6 +13,9 @@ class Tower(gfx.Drawable):
     gfx.Drawable.__init__(self)
     self.rect = Rect(0, 0, self.gfx.width, self.gfx.height)
 
+  def update(self):
+    pass
+
   def move(self, pos, gridpos):
     self.x, self.y = pos
     self.rect.topleft = pos
@@ -27,12 +30,13 @@ class TowerBubble(Tower):
   transparent = True
 #  gfx = gfx.TowerTurretGFX
   cost = 28
+  adrenaline_cost = 10
   cooldown = 20
   cooldown_min = 10
   cooldown_step = 1
-  range = 100
+  range = 120
   damage = 4
-  special_chance = 0.03
+  special_chance = 0.03  # overridden in yume.interface
   projectile = ProjectileBullet
 
   def __init__(self):
@@ -56,7 +60,7 @@ class TowerBubble(Tower):
   def update(self):
     if self.cooldown_tick > 0:
       self.cooldown_tick -= 1
-    self.range = 100 + Global.face.mana
+#    self.range = 100 + Global.face.mana
 
     if self.cooldown_tick <= 0:
       x, y = self.rect.center
@@ -99,8 +103,10 @@ class TowerBrain(Tower):
   cost = 200
   cooldown = 20
 
-  def update(self):
-    pass
+  def draw(self, screen):
+    screen.blit(self.gfx.surface, (self.x, self.y))
+    if random.randint(0,3) < 1:
+      self.gfx.next_frame()
 
 class TowerNode(Tower):
   graphic = gfx.TowerNode

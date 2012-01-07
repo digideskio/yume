@@ -70,15 +70,13 @@ class Yume(object):
     self.interface = Interface()
     Global.face = self.interface
 
-    clock = pygame.time.Clock()
+    self.clock = pygame.time.Clock()
     i = 0
     while True:
-      clock.tick(60)
+      self.clock.tick(60)
       i += 1
       if i == 180:
         i = 0
-        self.log("%.3f FPS" % clock.get_fps())
-        print("%.3f FPS" % clock.get_fps())
 
       t1 = time.time()
       for event in pygame.event.get():
