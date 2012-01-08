@@ -57,6 +57,7 @@ Towers:
 - Lazor:
     + Shoots one beam on varying enemies
     o The beam doesn't jump, the tower has to turn to change targets
+    o Shoots through enemies and through shields
     + Synergy with Crystal Ball
     + Synergy with Molecules
 - UFO:

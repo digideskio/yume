@@ -29,13 +29,13 @@ class TowerBubble(Tower):
   graphic = gfx.TowerBubbleGFX
   transparent = True
 #  gfx = gfx.TowerTurretGFX
-  cost = 18
+  cost = 22
   adrenaline_cost = 5
-  cooldown = 20
-  cooldown_min = 10
-  cooldown_step = 1
-  range = 120
-  damage = 4
+  cooldown = 14
+  cooldown_min = 14
+  cooldown_step = 2
+  range = 130
+  damage = 8
   special_chance = 0.03  # overridden in yume.interface
   projectile = ProjectileBullet
 
