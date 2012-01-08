@@ -99,7 +99,7 @@ class TowerBubble(Tower):
 
 
 class TowerLazor(Tower):
-  graphic = gfx.TowerBubbleGFX
+  graphic = gfx.TowerLazorGFX
   transparent = True
   damage = 1
   range = 100
@@ -109,16 +109,23 @@ class TowerLazor(Tower):
   def __init__(self):
     Tower.__init__(self)
     self.tick = 0
+    self.phase = 0
     self.target = None
 
   def update(self):
     x, y = self.rect.center
     self.tick += 1
-    if self.tick >= 4:
+    if self.tick >= 3:
       self.tick = 0
+      targets = list(Global.face.get_monsters_in_line(x, y, x + sin(self.phase) * self.range, y + cos(self.phase) * self.range, 10))
       if self.target and self.target.hp > 0 and self.range >= \
-        Global.face.distance_between(x, y, self.target.x, self.target.y):
-        self.target.damage(self.damage, self)
+        Global.face.distance_between(x, y, self.target.x, self.target.y) and \
+        (self.target in targets or not targets):
+          angle = atan2(self.target.x - x, self.target.y - y)
+          diff = self.phase - angle
+          self.phase = angle if abs(diff) < 0.04 else self.phase - max(-0.1, min(0.1, diff))
+          for mob in targets:
+            mob.damage(self.damage, self, ignore_shield=True)
       else:
         monsters = Global.face.get_random_monster_in_range(x, y, self.range)
         if monsters:
@@ -128,9 +135,12 @@ class TowerLazor(Tower):
 
   def draw(self, screen):
     screen.blit(self.gfx.surface, (self.x, self.y))
-    self.gfx.next_frame()
+#    self.gfx.next_frame()
     if self.target:
-      pygame.draw.line(screen, (0, 255, 0), self.rect.center, (self.target.x, self.target.y), 1)
+      x, y = self.rect.center
+      x += sin(self.phase) * self.range
+      y += cos(self.phase) * self.range
+      pygame.draw.line(screen, (0, 255, 0), self.rect.center, (x, y), 1)
 
 
 class TowerGuardian(Tower):

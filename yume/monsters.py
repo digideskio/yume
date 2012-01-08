@@ -12,6 +12,8 @@ class Monster(gfx.Drawable):
   graphic = gfx.MonsterGFX
   transparent = True
 
+  traits = 'ahpPsvr'
+
   def draw(self, screen):
     screen.blit(self.gfx.surface, (self.x - self.gfx.width / 2, self.y - self.gfx.height / 2))
     self.gfx.next_frame()
@@ -19,9 +21,12 @@ class Monster(gfx.Drawable):
   def draw_hp_bar(self, screen):
     wid = self.gfx.width * self.hp / self.max_hp
     pygame.draw.line(screen, (255, 0, 0), (self.x - self.gfx.width / 2, self.y - self.gfx.height), (self.x - self.gfx.width / 2 + wid, self.y - self.gfx.height), 2)
+    if self.shield > 0:
+      wid = self.gfx.width * self.shield / self.max_shield
+      offset = 1 if self.hp < self.max_hp else 0
+      pygame.draw.line(screen, (0, 0, 255), (self.x - self.gfx.width / 2, self.y - self.gfx.height+offset), (self.x - self.gfx.width / 2 + wid, self.y - self.gfx.height+offset), 2)
 
   def __init__(self, gene, arena):
-#    print("monster created")
     gfx.Drawable.__init__(self)
     self.stagger = 0
     self.waypoint_index = 1
@@ -40,15 +45,19 @@ class Monster(gfx.Drawable):
     # =====================
     # find starting position
     r = arena.rect
-    self.hp = (gene.count('a') + 1) * 10
+    self.hp = (gene.count('h') + 2) * 8
     self.max_hp = self.hp
-    self.speed = 1 + (gene.count('g') * 0.1)
+    self.speed = 1 + (gene.count('v') * 0.1)
+    self.shield = gene.count('s') * 3
+    self.max_shield = self.shield
     self.worth = log(len(gene) + 2)
-    self.armor = gene.count('c') / 5.0
+    self.armor = gene.count('a') / 6.0
+    self.recovery = gene.count('r') * 0.05
+    self.shield_recovery = gene.count('r') * 0.2
     self.gene = gene
 
     ep = arena.level.entry_points
-    x, y = ep[gene.count('t') % len(ep)]
+    x, y = ep[(gene.count('p') + 2 * gene.count('P')) % len(ep)]
     self.x, self.y = arena.cell_to_pos(x + 2, y + 2)
 
   def update(self):
@@ -56,6 +65,9 @@ class Monster(gfx.Drawable):
       self.find_next_waypoint()
     if self.hp <= 0:
       return
+
+    self.shield = min(self.max_shield, self.shield + self.shield_recovery)
+    self.hp = min(self.max_hp, self.hp + self.recovery)
 
     self.position += self.speed
     if self.position >= self.vector_length:
@@ -65,9 +77,9 @@ class Monster(gfx.Drawable):
     self.y = self.base_y + self.vector_y * self.position
     self.rect.center = (self.x, self.y)
     if self.tunnel_entered:
-      self.fitness += 1
+      self.fitness += self.speed
     else:
-      self.fitness += 0.1
+      self.fitness += self.speed * 0.1
 
   def look_again_for_tunnel_entry(self):
     if not self.tunnel_entered:
@@ -106,10 +118,16 @@ class Monster(gfx.Drawable):
 #    self.fitness = (len(Global.arena.nodes) - 1 - self.current_node_index) * 10
 #    print("died at fitness %d" % self.fitness)
 
-  def damage(self, damage, dealer):
+  def damage(self, damage, dealer, ignore_shield=False):
     if self.hp > 0:
       damage = max(0.1, damage - self.armor)
-      self.hp -= damage
+      if ignore_shield or self.shield == 0:
+        self.hp -= damage
+      elif self.shield > damage:
+        self.shield -= damage
+      else:
+        self.hp -= damage - self.shield
+        self.shield = 0
       self.stagger = max(10, self.stagger)
       if self.hp <= 0:
         self.die()

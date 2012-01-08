@@ -65,7 +65,7 @@ class Interface(object):
     button.activation_test = lambda: Global.face.mana >= TowerBubble.cost \
         and Global.face.adren + TowerBubble.adrenaline_cost <= Global.face.adren_max
     button.tooltip = "Create a Bubble Tower"
-    buttons['lazor'] = button = MenuButton(gfx.TowerBubbleGFX)
+    buttons['lazor'] = button = MenuButton(gfx.TowerLazorGFX)
     button.action = lambda: Global.face.press(K_2)
     button.activation_test = lambda: Global.face.mana >= TowerLazor.cost \
         and Global.face.adren + TowerLazor.adrenaline_cost <= Global.face.adren_max
@@ -122,6 +122,23 @@ class Interface(object):
       x2, y2 = monster.rect.center
       if sqrt((x1-x2) ** 2 + (y1-y2) ** 2) < rnge:
         yield monster
+
+  def get_monsters_in_line(self, x1, y1, x2, y2, width):
+    for monster in self.arena.creeps:
+      try:
+        dx, dy = x2 - x1, y2 - y1
+        slope = float(dy) / dx
+        d_vert = monster.y - (slope * monster.x + (y1 - slope * x1))
+        slope = float(dx) / dy
+        d_hori = monster.x - (slope * monster.y + (x1 - slope * y1))
+        dist = sqrt((d_hori*d_hori * d_vert*d_vert) / (d_hori*d_hori + d_vert*d_vert))
+        if dist >= width:
+          continue
+      except ZeroDivisionError:
+        pass
+      if monster.x + width >= min(x1, x2) and monster.x - width <= max(x1, x2) and \
+         monster.y + width >= min(y1, y2) and monster.y - width <= max(y1, y2):
+           yield monster
 
   def get_random_monster_in_range(self, x1, y1, rnge, n=1):
     monsters = list(self.get_monsters_in_range(x1, y1, rnge))
@@ -200,7 +217,7 @@ class Interface(object):
         mana = round_(self.mana),
         adrenaline = round_(self.adren),
         adrenalinemax = self.adren_max,
-        gene = self.arena.level.gene,
+        genepool = "\n".join(self.arena.level.genepool),
         level = self.arena.level_number,
         score = self.score)
     status_template = STATUS_TEMPLATE.format(**data)
@@ -292,6 +309,7 @@ class Arena(object):
     self.monster_timer = 0
     self.tower_positions = self.level.cells
 
+    self.dead_creeps = list()
     self.creeps = list()
     self.projectiles = list()
     self.towers = list()
@@ -299,8 +317,6 @@ class Arena(object):
     self.nodes = []
     self.monsters_left = set()
     self.grid = self.level.make_grid((100, 0, 0))
-
-    self.fittest = None
 
   def release(self, obj, pos):
     if issubclass(obj, Tower):
@@ -365,12 +381,8 @@ class Arena(object):
 
       for mob in list(self.creeps):
         if mob.hp <= 0:
-          if self.fittest:
-            if mob.fitness > self.fittest.fitness:
-              self.fittest = mob
-          else:
-            self.fittest = mob
           self.creeps.remove(mob)
+          self.dead_creeps.append(mob)
           if mob.killer:
             Global.face.score += int(mob.worth)
             Global.face.mana += mob.worth
@@ -392,14 +404,13 @@ class Arena(object):
         self.spawn(monster)
         self.monster_timer = 0.5
       elif not self.creeps:
-#        Global.yume.log("Gene: %s" % self.level.gene)
         self.monster_timer = 3
         if self.level_number > 0:
-          self.level.mutate(self.fittest)
+          self.level.mutate(self.dead_creeps)
           Global.face.score += 100
         self.level_number += 1
         self.monsters_left = self.level.get_monsters()
-        self.fittest = None
+        self.dead_creeps = list()
 
     self.last_update = time.time()
 

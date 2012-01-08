@@ -16,5 +16,6 @@ STATUS_TEMPLATE = """score: {score}
 level: {level}
 mana: {mana}
 adrenaline: {adrenaline}/{adrenalinemax}
-Enemy gene: {gene}
-FPS: {fps}"""
+FPS: {fps}
+Gene Pool:
+{genepool}"""

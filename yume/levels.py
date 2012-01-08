@@ -7,28 +7,57 @@ from yume import *
 
 class Level(object):
   def __init__(self, startgene="", pools=1):
-    self.gene = startgene
+    self.individuals = 10
+    self.genepool = [startgene] * self.individuals
+    self.sampling_method = self.sm_stochastic_universal_sampling
 
-  def mutate(self, fittest=None):
-    if fittest:
-      self.gene = fittest.gene
-    self.gene += random.sample('gatc', 1)[0]
+  def sm_fittest(self):
+    pool = list(self.dead_monsters)
+    pool.sort(key=lambda mob: -mob.fitness)
+    fittest = pool[0].gene
+    mutated = fittest + random.sample(Monster.traits, 1)[0]
+    mutated = self.single_mutation(mutated)
+    self.genepool = [mutated] * self.individuals
+
+  def sm_stochastic_universal_sampling(self):
+    pool = list(self.dead_monsters)
+    pool.sort(key=lambda mob: -mob.fitness)
+    total_fitness = sum(mob.fitness for mob in self.dead_monsters)
+    step = 1.0 / self.individuals
+    self.genepool = []
+
+    pos = random.random() * step
+    accumulated_fitness = pool[0].fitness
+    index = 0
+    for i in range(self.individuals):
+      while pos > accumulated_fitness:
+        accumulated_fitness += pool[index].fitness
+        index += 1
+      gene = pool[index].gene + random.sample(Monster.traits, 1)[0]
+      gene = self.single_mutation(gene)
+      self.genepool.append(gene)
+
+  def mutate(self, dead_monsters):
+    self.dead_monsters = dead_monsters
+    self.sampling_method()
 
   def single_mutation(self, gene):
     if gene and random.randint(0, 1):
       if random.randint(1,3) == 1:
         # append random trait
-        return gene + random.sample('gatc', 1)[0]
+        return gene + random.sample(Monster.traits, 1)[0]
       else:
         # swap one trait
         gene_l = list(gene)
-        gene_l[random.randint(0, len(gene)-1)] = random.sample('gatc', 1)[0]
+        gene_l[random.randint(0, len(gene)-1)] = random.sample(Monster.traits, 1)[0]
         return ''.join(gene_l)
     else:
       return gene
 
   def get_monsters(self):
-    return list(self.single_mutation(self.gene) for _ in range(10))
+    self.last_monsters = tuple(self.genepool)
+#    self.last_monsters = tuple(self.single_mutation(gene) for gene in self.genepool)
+    return list(self.last_monsters)
 
   def make_grid(self, color):
     surface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))

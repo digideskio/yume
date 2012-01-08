@@ -142,6 +142,25 @@ class TowerBubbleGFX(GFX):
 #    circle(surface, (12, 12), 12)
 #    circle(surface, (0, 255, 0), (12, 12), 12, 1)
 
+class TowerLazorGFX(GFX):
+  height = 24
+  width = 24
+  frames = 1
+
+  def __init__(self, args):
+    self.scale, self.rotation = args
+
+  def draw_frame(self, surface, n):
+#    wid = self.width * (sin(n*pi/8) + 8) / 9.0
+    layer = pygame.Surface((self.width, self.height))
+    circle(layer, (40, 40, 40), (12, 12), 12)
+    circle(layer, (100, 100, 100), (12, 12), 12, 1)
+    wid = self.width
+    hei = int(self.height * (cos(n*pi/16) + 4) / 5.0)
+    surface.blit(pygame.transform.smoothscale(layer, (wid, hei)), (0, self.height - hei))
+#    circle(surface, (12, 12), 12)
+#    circle(surface, (0, 255, 0), (12, 12), 12, 1)
+
 class TowerBrain(GFX):
   height = 24
   width = 24
