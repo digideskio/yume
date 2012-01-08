@@ -1,8 +1,6 @@
 class Global(object):
   pass
 
-TEST_MODE = True
-
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 768
 ARENA_LEFT_POS = 30
@@ -15,6 +13,7 @@ CELLS_X = ARENA_WIDTH / CELL_WIDTH
 CELLS_Y = ARENA_HEIGHT / CELL_HEIGHT
 
 STATUS_TEMPLATE = """score: {score}
+level: {level}
 mana: {mana}
 adrenaline: {adrenaline}/{adrenalinemax}
 Enemy gene: {gene}

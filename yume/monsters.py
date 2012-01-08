@@ -28,6 +28,7 @@ class Monster(gfx.Drawable):
     self.waypoints = [(0, 0)]
     self.calc_vector = True
     self.killer = None
+    self.fitness = 0
     self.tunnel_entered = False
 
     # undefined
@@ -43,6 +44,8 @@ class Monster(gfx.Drawable):
     self.max_hp = self.hp
     self.speed = 1 + (gene.count('g') * 0.1)
     self.worth = log(len(gene) + 2)
+    self.armor = gene.count('c') / 5.0
+    self.gene = gene
 
     ep = arena.level.entry_points
     x, y = ep[gene.count('t') % len(ep)]
@@ -61,6 +64,10 @@ class Monster(gfx.Drawable):
     self.x = self.base_x + self.vector_x * self.position
     self.y = self.base_y + self.vector_y * self.position
     self.rect.center = (self.x, self.y)
+    if self.tunnel_entered:
+      self.fitness += 1
+    else:
+      self.fitness += 0.1
 
   def look_again_for_tunnel_entry(self):
     if not self.tunnel_entered:
@@ -79,8 +86,10 @@ class Monster(gfx.Drawable):
       self.tunnel_entered = True
       if self.current_node_index <= 0:
         Global.yume.interface.crash()
+        self.fitness += 2000
         self.die()
       else:
+        self.fitness += 500
         self.current_node_index -= 1
 
     node = nodes[self.current_node_index]
@@ -94,10 +103,14 @@ class Monster(gfx.Drawable):
 
   def die(self):
     self.hp = 0
+#    self.fitness = (len(Global.arena.nodes) - 1 - self.current_node_index) * 10
+#    print("died at fitness %d" % self.fitness)
 
   def damage(self, damage, dealer):
     if self.hp > 0:
+      damage = max(0.1, damage - self.armor)
       self.hp -= damage
       self.stagger = max(10, self.stagger)
       if self.hp <= 0:
+        self.die()
         self.killer = dealer

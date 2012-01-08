@@ -26,6 +26,7 @@ def manabar_pos_transform(mana):
 
 class Interface(object):
   def __init__(self):
+    self.score = 0
     self.mana = 100.0
     self.mana_regen = 0.1
     self.adren = 0.0
@@ -61,12 +62,26 @@ class Interface(object):
     buttons = OpenStruct()
     buttons['bubble'] = button = MenuButton(gfx.TowerBubbleGFX)
     button.action = lambda: Global.face.press(K_1)
+    button.activation_test = lambda: Global.face.mana >= TowerBubble.cost \
+        and Global.face.adren + TowerBubble.adrenaline_cost <= Global.face.adren_max
     button.tooltip = "Create a Bubble Tower"
+    buttons['lazor'] = button = MenuButton(gfx.TowerBubbleGFX)
+    button.action = lambda: Global.face.press(K_2)
+    button.activation_test = lambda: Global.face.mana >= TowerLazor.cost \
+        and Global.face.adren + TowerLazor.adrenaline_cost <= Global.face.adren_max
+    button.tooltip = "Create a Lazor Tower"
+    buttons['guardian'] = button = MenuButton(gfx.TowerBubbleGFX)
+    button.action = lambda: Global.face.press(K_3)
+    button.activation_test = lambda: Global.face.mana >= TowerGuardian.cost \
+        and Global.face.adren + TowerGuardian.adrenaline_cost <= Global.face.adren_max
+    button.tooltip = "Create a Guardian Tower"
     buttons['brain'] = button = MenuButton(gfx.TowerBrain)
     button.action = lambda: Global.face.press(K_0)
     button.tooltip = "Create a Brain"
     buttons['node'] = button = MenuButton(gfx.TowerNode)
     button.action = lambda: Global.face.press(K_9)
+    button.activation_test = lambda: Global.face.mana >= TowerNode.cost \
+        and Global.face.adren + TowerNode.adrenaline_cost <= Global.face.adren_max
     button.tooltip = "Create a Node"
     self.button_definitions = buttons
 
@@ -186,7 +201,8 @@ class Interface(object):
         adrenaline = round_(self.adren),
         adrenalinemax = self.adren_max,
         gene = self.arena.level.gene,
-        score = 0)
+        level = self.arena.level_number,
+        score = self.score)
     status_template = STATUS_TEMPLATE.format(**data)
     for line in status_template.split("\n"):
       text = self.font.render(line, 1, (200, 200, 200))
@@ -226,6 +242,10 @@ class Interface(object):
   def press(self, key):
     if key == K_1:
       self.drag(TowerBubble)
+    if key == K_2:
+      self.drag(TowerLazor)
+    if key == K_3:
+      self.drag(TowerGuardian)
     if key == K_0:
       if not self.arena.brain:
         self.drag(TowerBrain)
@@ -247,7 +267,7 @@ class Arena(object):
     self.surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     self.surface.set_colorkey((0, 0, 0))
 
-    if TEST_MODE:
+    if Global.yume.test_mode:
       self.background = get_gfx(gfx.TestBackground, (1, 1))
     else:
       self.background = get_gfx(gfx.Background, (1, 1))
@@ -266,6 +286,7 @@ class Arena(object):
   def load_level(self, cls):
     self.level = cls()
     Global.level = self.level
+    self.level_number = 0
     self.last_update = 0
     self.delay = 1
     self.monster_timer = 0
@@ -278,6 +299,8 @@ class Arena(object):
     self.nodes = []
     self.monsters_left = set()
     self.grid = self.level.make_grid((100, 0, 0))
+
+    self.fittest = None
 
   def release(self, obj, pos):
     if issubclass(obj, Tower):
@@ -306,6 +329,8 @@ class Arena(object):
       self.nodes = [tower]
       Global.face.menu.remove(Global.face.button_definitions['brain'])
       Global.face.menu.append(Global.face.button_definitions['bubble'])
+      Global.face.menu.append(Global.face.button_definitions['lazor'])
+      Global.face.menu.append(Global.face.button_definitions['guardian'])
       Global.face.menu.append(Global.face.button_definitions['node'])
     elif cls == TowerNode:
       self.build_node(tower)
@@ -340,9 +365,15 @@ class Arena(object):
 
       for mob in list(self.creeps):
         if mob.hp <= 0:
+          if self.fittest:
+            if mob.fitness > self.fittest.fitness:
+              self.fittest = mob
+          else:
+            self.fittest = mob
           self.creeps.remove(mob)
           if mob.killer:
-            Global.yume.interface.mana += mob.worth
+            Global.face.score += int(mob.worth)
+            Global.face.mana += mob.worth
         mob.update()
 
       for tower in list(self.towers):
@@ -363,8 +394,12 @@ class Arena(object):
       elif not self.creeps:
 #        Global.yume.log("Gene: %s" % self.level.gene)
         self.monster_timer = 3
+        if self.level_number > 0:
+          self.level.mutate(self.fittest)
+          Global.face.score += 100
+        self.level_number += 1
         self.monsters_left = self.level.get_monsters()
-        self.level.mutate()
+        self.fittest = None
 
     self.last_update = time.time()
 

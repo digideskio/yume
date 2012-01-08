@@ -19,13 +19,15 @@ class MenuButton(Widget, Drawable):
     Drawable.__init__(self)
     self.tooltip = ""
     self.action = lambda: None
+    self.activation_test = lambda: True
 
   def draw(self, screen, pos):
     self.x, self.y = pos
     self.x += 8
     self.y += 8
+    color = (40, 40, 40) if self.activation_test() else (90, 0, 0)
     rect(screen, (0, 0, 0), Rect(pos[0], pos[1], self.width, self.height), 0)
-    rect(screen, (40, 40, 40), Rect(pos[0], pos[1], self.width-2, self.height-2), 0)
+    rect(screen, color, Rect(pos[0], pos[1], self.width-2, self.height-2), 0)
     Drawable.draw(self, screen)
     self.x -= 8
     self.y -= 8

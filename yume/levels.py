@@ -9,11 +9,26 @@ class Level(object):
   def __init__(self, startgene="", pools=1):
     self.gene = startgene
 
-  def mutate(self):
+  def mutate(self, fittest=None):
+    if fittest:
+      self.gene = fittest.gene
     self.gene += random.sample('gatc', 1)[0]
 
+  def single_mutation(self, gene):
+    if gene and random.randint(0, 1):
+      if random.randint(1,3) == 1:
+        # append random trait
+        return gene + random.sample('gatc', 1)[0]
+      else:
+        # swap one trait
+        gene_l = list(gene)
+        gene_l[random.randint(0, len(gene)-1)] = random.sample('gatc', 1)[0]
+        return ''.join(gene_l)
+    else:
+      return gene
+
   def get_monsters(self):
-    return list(self.gene for _ in range(10))
+    return list(self.single_mutation(self.gene) for _ in range(10))
 
   def make_grid(self, color):
     surface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
@@ -78,5 +93,5 @@ class Level1(Level):
       .......................................
       .......................................
       .......................................
-      ....................E.................."""
+      ..........E...............E............"""
     self._convert_level(self.level)

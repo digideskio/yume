@@ -50,6 +50,8 @@ class Yume(object):
   def parse_args(self):
     p = OptionParser(usage="%prog [options]")
     p.add_option('-r', '--resolution', type='string')
+    p.add_option('-f', '--fullscreen', action='store_true')
+    p.add_option('-t', '--test', action='store_true', help="activate test mode")
     p.add_option('-p', '--profile', action='store_true')
     options, _ = p.parse_args()
 
@@ -59,11 +61,16 @@ class Yume(object):
         w, h = match.groups()
         yume.SCREEN_WIDTH, yume.SCREEN_HEIGHT = int(w), int(h)
     self.profile = bool(options.profile)
+    self.fullscreen = bool(options.fullscreen)
+    self.test_mode = bool(options.test)
 
   def run(self):
     from yume.interface import Interface
+    flags = pygame.SRCALPHA | pygame.DOUBLEBUF
+    if self.fullscreen:
+      flags |= pygame.FULLSCREEN
     self.screen = pygame.display.set_mode((yume.SCREEN_WIDTH, yume.SCREEN_HEIGHT),
-        pygame.SRCALPHA | pygame.DOUBLEBUF, 32)
+        flags, 32)
     self.layer = pygame.Surface((yume.ARENA_WIDTH, yume.ARENA_HEIGHT))
     pygame.display.set_caption('Yume Tower Defense')
 
