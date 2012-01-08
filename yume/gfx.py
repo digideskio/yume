@@ -6,21 +6,22 @@ from math import *
 from pygame import Rect
 from pygame.draw import *
 from yume import *
+from yume.lib import cached_method
 
 #=============================================================================
 #== Access functions
 
-_gfx_cache = {}
+#_gfx_cache = {}
 
 class Drawable(object):
   graphic = None
   transparent = False
   def __init__(self):
     self.x, self.y = 0, 0
+    self.rect = Rect(0, 0, 1, 1)
     if self.graphic:
       self.gfx = get_gfx(self.graphic, (1, 1), self.transparent)
       self.rect = Rect(0, 0, self.gfx.width, self.gfx.height)
-    self.rect = Rect(0, 0, 1, 1)
 
   def draw(self, screen):
     screen.blit(self.gfx.surface, (self.x, self.y))
@@ -28,41 +29,69 @@ class Drawable(object):
 
 class GFX(object):
   frames = 1
-  current_frame = 0
+  current_frame = -1
+  transparent = False
 
   def next_frame(self):
     self.current_frame = (self.current_frame + 1) % len(self.surfaces)
     self.surface = self.surfaces[self.current_frame]
 
+  def next_frame(self):
+    self.set_frame(self.current_frame + 1)
+
+  def set_frame(self, n):
+    if n != self.current_frame:
+      self.current_frame = n % self.frames
+      self.surface = get_surface(self.__class__, self.current_frame, self.__class__.__name__)
+#    print("class = %s, surface = %s" % (self.__class__.__name__, self.surface))
+
+@cached_method
+def get_surface(*args):
+#  stderr.write("Drawing %s\n" % repr(args))
+  cls = args[0]
+  transparency = cls.transparent
+  surface = pygame.Surface((cls.width, cls.height))
+  if transparency:
+    surface.set_colorkey((0, 0, 0))
+  cls.draw_frame(surface, args[1])
+  if transparency:
+    return surface.convert_alpha()
+  return surface.convert()
+
+#def get_gfx(name, args, transparency=False):
+#  key = (name, args)
+#  if key not in _gfx_cache:
+#    surfaces = _draw_gfx(name, args, transparency)
+#    _gfx_cache[key] = surfaces
+#  else:
+#    surfaces = _gfx_cache[key]
+#  gfx = name(args)
+#  gfx.surfaces = surfaces
+#  gfx.surface = surfaces[gfx.current_frame]
+#  return gfx
+
 def get_gfx(name, args, transparency=False):
-  key = (name, args)
-  if key not in _gfx_cache:
-    surfaces = _draw_gfx(name, args, transparency)
-    _gfx_cache[key] = surfaces
-  else:
-    surfaces = _gfx_cache[key]
   gfx = name(args)
-  gfx.surfaces = surfaces
-  gfx.surface = surfaces[gfx.current_frame]
+  gfx.set_frame(0)
   return gfx
 
-def _draw_gfx(cls, args, transparency):
-  gfx = cls(args)
-  surfaces = []
-  t = time.time()
-  stderr.write("Drawing %s" % cls.__name__)
-  for i in range(gfx.frames):
-    stderr.write(".")
-    surface = pygame.Surface((gfx.width, gfx.height))
-    if transparency:
-      surface.set_colorkey((0, 0, 0))
-    gfx.draw_frame(surface, i)
-    if transparency:
-      surfaces.append(surface.convert_alpha())
-    else:
-      surfaces.append(surface.convert())
-  stderr.write(" (%fs)\n" % (time.time() - t))
-  return surfaces
+#def _draw_gfx(cls, args, transparency):
+#  gfx = cls(args)
+#  surfaces = []
+#  t = time.time()
+#  stderr.write("Drawing %s" % cls.__name__)
+#  for i in range(gfx.frames):
+#    stderr.write(".")
+#    surface = pygame.Surface((gfx.width, gfx.height))
+#    if transparency:
+#      surface.set_colorkey((0, 0, 0))
+#    gfx.draw_frame(surface, i)
+#    if transparency:
+#      surfaces.append(surface.convert_alpha())
+#    else:
+#      surfaces.append(surface.convert())
+#  stderr.write(" (%fs)\n" % (time.time() - t))
+#  return surfaces
 
 def _periodic_blit(source, destination):
   w, h = source.get_size()
@@ -83,6 +112,7 @@ class Bullet(GFX):
   def __init__(self, args):
     self.scale, self.rotation = args
 
+  @classmethod
   def draw_frame(self, surface, n):
     line(surface, (205, 100, 255), (2, 2), self.foo[n])
 
@@ -95,6 +125,7 @@ class Bubble(GFX):
   def __init__(self, args):
     self.scale, self.rotation = args
 
+  @classmethod
   def draw_frame(self, surface, n):
     circle(surface, (255, 255, 255), (2, 2), 2)
 #    line(surface, (205, 100, 255), (2, 2), self.foo[n])
@@ -103,10 +134,12 @@ class MonsterGFX(GFX):
   height = 10
   width = 10
   frames = 1
+  transparent = True
 
   def __init__(self, args):
     self.scale, self.rotation = args
 
+  @classmethod
   def draw_frame(self, surface, n):
     circle(surface, (255, 0, 0), (5, 5), 5)
     circle(surface, (100, 100, 100), (5, 5), 5, 2)
@@ -119,6 +152,7 @@ class Monster2GFX(GFX):
   def __init__(self, args):
     self.scale, self.rotation = args
 
+  @classmethod
   def draw_frame(self, surface, n):
     circle(surface, (0, 100, 255), (5, 5), 5)
     circle(surface, (100, 100, 100), (5, 5), 5, 2)
@@ -127,10 +161,12 @@ class TowerBubbleGFX(GFX):
   height = 24
   width = 24
   frames = 32
+  transparent = True
 
   def __init__(self, args):
     self.scale, self.rotation = args
 
+  @classmethod
   def draw_frame(self, surface, n):
 #    wid = self.width * (sin(n*pi/8) + 8) / 9.0
     layer = pygame.Surface((self.width, self.height))
@@ -146,10 +182,12 @@ class TowerLazorGFX(GFX):
   height = 24
   width = 24
   frames = 1
+  transparent = True
 
   def __init__(self, args):
     self.scale, self.rotation = args
 
+  @classmethod
   def draw_frame(self, surface, n):
 #    wid = self.width * (sin(n*pi/8) + 8) / 9.0
     layer = pygame.Surface((self.width, self.height))
@@ -165,6 +203,7 @@ class TowerBrain(GFX):
   height = 24
   width = 24
   frames = 8
+  transparent = True
 
   def __init__(self, args):
     self.scale, self.rotation = args
@@ -173,6 +212,7 @@ class TowerBrain(GFX):
     self.height = int(self.height * self.scale)
     self.width = int(self.width * self.scale)
 
+  @classmethod
   def draw_frame(self, surface, n):
     layer = pygame.Surface((self.width * 4, self.height * 4))
     circle(layer, (1 + (n % 2) * 154, ((n % 4) < 2) * 155, (n < 4) * 155), (48, 48), 48)
@@ -183,6 +223,7 @@ class TowerNode(GFX):
   height = 24
   width = 24
   frames = 64
+  transparent = True
 
   def __init__(self, args):
     self.scale, self.rotation = args
@@ -191,6 +232,7 @@ class TowerNode(GFX):
     self.height = int(self.height * self.scale)
     self.width = int(self.width * self.scale)
 
+  @classmethod
   def draw_frame(self, surface, n):
     layer = pygame.Surface((self.width*4, self.height*4))
     color = 225 + sin(n*2*pi/self.frames) * 30
@@ -209,6 +251,7 @@ class TestBackground(GFX):
   def __init__(self, args):
     self.scale, _ = args
 
+  @classmethod
   def draw_frame(self, surface, n):
     surface.fill((0, 0, 0))
 
@@ -223,6 +266,7 @@ class Background(GFX):
     self.height = int(self.height * self.scale)
     self.width = int(self.width * self.scale)
 
+  @classmethod
   def draw_frame(self, surface, n):
     for j in range(20):
       points = []
@@ -232,12 +276,14 @@ class Background(GFX):
         points.append(((0 if i % 2 else 10) + j * 40, 600-5*i+n+j))
       polygon(surface, (155, 0, 0), points)
 
+  @classmethod
   def draw_frame(self, surface, n):
     layer = pygame.Surface((16, 16))
     circle(layer, (120+100*sin(n*pi/self.frames*2), 0, 0), ((n%8)*2-8, (n%8)-8), 8)
     circle(layer, (120+100*sin(n*pi/self.frames*2), 0, 0), ((n%8)*2+8, (n%8)+8), 8)
     _periodic_blit(layer, surface)
 
+  @classmethod
   def draw_frame2(self, surface, n):
     x, y = surface.get_size()
     xc = x / self.compression
@@ -256,6 +302,7 @@ class Background(GFX):
     surface.blit(layer, (0, 0))
 #    pygame.surfarray.blit_array(surface, ary)
 
+  @classmethod
   def draw_frame(self, surface, n):
     self.draw_frame2(surface,n)
     layer = pygame.Surface((16, 32))
@@ -285,6 +332,7 @@ class ManaBar(GFX):
     self.width = self.scale * self.base_width
     self.height = 16
 
+  @classmethod
   def draw_frame(self, surface, n):
     ary = numpy.zeros((self.width, self.height), dtype=numpy.int32)
     for x in range(self.width):
@@ -310,6 +358,7 @@ class CostBar(GFX):
     self.width = self.scale * self.base_width
     self.height = 16
 
+  @classmethod
   def draw_frame(self, surface, n):
     ary = numpy.zeros((self.width, self.height), dtype=numpy.int32)
     for x in range(self.width):
@@ -337,6 +386,7 @@ class AdrenalineBar(GFX):
     self.width = self.scale * self.base_width
 #    self.height = 16
 
+  @classmethod
   def draw_frame(self, surface, n):
     ary = numpy.zeros((self.width, self.height), dtype=numpy.int32)
     for x in range(self.width):
@@ -363,6 +413,7 @@ class AdrenalineCostBar(GFX):
     self.scale = args[0]
     self.width = self.scale * self.base_width
 
+  @classmethod
   def draw_frame(self, surface, n):
     rect(surface, (170 , 170, 30), Rect(0, 0, self.width, self.height))
 
@@ -374,6 +425,7 @@ class UIGFX(GFX):
   def __init__(self, args):
     self.scale = args[0]
 
+  @classmethod
   def draw_frame(self, surface, n):
     rect(surface, (100, 100, 100), Rect(0, 0, self.width, self.height))
     rect(surface, (200, 200, 200), Rect(10, 20, self.width-20, 300))

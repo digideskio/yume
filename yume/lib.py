@@ -1,11 +1,12 @@
 def cached_method(fnc):
-  fnc._cache = {}
+  cache = {}
   def result(self, *args):
-    if args in fnc._cache:
-      return fnc._cache[args]
+    if args in cache:
+      return cache[args]
     value = fnc(self, *args)
-    fnc._cache[args] = value
+    cache[args] = value
     return value
+  result._cache = cache
   return result
 
 class OpenStruct(dict):
