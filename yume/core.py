@@ -83,7 +83,8 @@ class Yume(object):
     while True:
       self.clock.tick(60)
       i += 1
-      if i == 180:
+      if i == 300:
+        self.log(None)
         i = 0
 
       t1 = time.time()

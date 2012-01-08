@@ -203,10 +203,11 @@ class Interface(object):
     x, y = 0, SCREEN_HEIGHT
     color = 255
     for text in Global.yume.log_entries:
-      y -= self.font.get_height() + 2
-      text = self.font.render(text, 1, (color, color, color))
+      if text is not None:
+        y -= self.font.get_height() + 2
+        text = self.font.render(text, 1, (color, color, color))
+        screen.blit(text, (x, y))
       color -= 24
-      screen.blit(text, (x, y))
 
   def draw_status(self, screen):
     y = 50
@@ -214,8 +215,8 @@ class Interface(object):
       return int(f * 10) / 10.0
 
     data = dict(fps = round_(Global.yume.clock.get_fps()),
-        mana = round_(self.mana),
-        adrenaline = round_(self.adren),
+        mana = int(self.mana),
+        adrenaline = int(self.adren),
         adrenalinemax = self.adren_max,
         genepool = "\n".join(self.arena.level.genepool),
         level = self.arena.level_number,
@@ -285,6 +286,7 @@ class Arena(object):
     if Global.yume.test_mode:
       self.background = get_gfx(gfx.TestBackground, (1, 1))
     else:
+      [gfx.get_surface(gfx.Background, i, 'Background') for i in range(gfx.Background.frames)]
       self.background = get_gfx(gfx.Background, (1, 1))
     self.bg_tick = 0
 

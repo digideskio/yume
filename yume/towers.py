@@ -29,7 +29,7 @@ class TowerBubble(Tower):
   graphic = gfx.TowerBubbleGFX
   transparent = True
 #  gfx = gfx.TowerTurretGFX
-  cost = 28
+  cost = 18
   adrenaline_cost = 5
   cooldown = 20
   cooldown_min = 10

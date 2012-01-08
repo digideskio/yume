@@ -17,5 +17,6 @@ level: {level}
 mana: {mana}
 adrenaline: {adrenaline}/{adrenalinemax}
 FPS: {fps}
+
 Gene Pool:
 {genepool}"""
