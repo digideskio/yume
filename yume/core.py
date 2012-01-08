@@ -72,6 +72,7 @@ class Yume(object):
     self.screen = pygame.display.set_mode((yume.SCREEN_WIDTH, yume.SCREEN_HEIGHT),
         flags, 32)
     self.layer = pygame.Surface((yume.ARENA_WIDTH, yume.ARENA_HEIGHT))
+    self.layer = self.layer.convert()
     pygame.display.set_caption('Yume Tower Defense')
 
     self.interface = Interface()

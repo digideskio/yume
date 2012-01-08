@@ -281,8 +281,6 @@ class Arena(object):
         ARENA_LEFT_POS + ARENA_WIDTH, ARENA_TOP_POS + ARENA_HEIGHT)
     self.renderer = pygame.sprite.RenderPlain([])
     self._cache = {}
-    self.surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-    self.surface.set_colorkey((0, 0, 0))
 
     if Global.yume.test_mode:
       self.background = get_gfx(gfx.TestBackground, (1, 1))
@@ -317,6 +315,9 @@ class Arena(object):
     self.nodes = []
     self.monsters_left = set()
     self.grid = self.level.make_grid((100, 0, 0))
+    self.surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+    self.surface.set_colorkey((0, 0, 0))
+    self.surface.convert_alpha()
 
   def release(self, obj, pos):
     if issubclass(obj, Tower):

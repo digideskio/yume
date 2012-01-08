@@ -32,22 +32,23 @@ class GFX(object):
   current_frame = -1
   transparent = False
 
-  def next_frame(self):
-    self.current_frame = (self.current_frame + 1) % len(self.surfaces)
-    self.surface = self.surfaces[self.current_frame]
+  def __init__(self):
+    self.set_frame(0)
 
   def next_frame(self):
-    self.set_frame(self.current_frame + 1)
+    if self.frames > 1:
+      self.current_frame = (self.current_frame + 1) % self.frames
+      self.surface = get_surface(self.__class__, self.current_frame,
+          hash(self.__class__.__name__))
 
   def set_frame(self, n):
     if n != self.current_frame:
       self.current_frame = n % self.frames
-      self.surface = get_surface(self.__class__, self.current_frame, self.__class__.__name__)
-#    print("class = %s, surface = %s" % (self.__class__.__name__, self.surface))
+      self.surface = get_surface(self.__class__, self.current_frame,
+          hash(self.__class__.__name__))
 
 @cached_method
 def get_surface(*args):
-#  stderr.write("Drawing %s\n" % repr(args))
   cls = args[0]
   transparency = cls.transparent
   surface = pygame.Surface((cls.width, cls.height))
@@ -58,40 +59,8 @@ def get_surface(*args):
     return surface.convert_alpha()
   return surface.convert()
 
-#def get_gfx(name, args, transparency=False):
-#  key = (name, args)
-#  if key not in _gfx_cache:
-#    surfaces = _draw_gfx(name, args, transparency)
-#    _gfx_cache[key] = surfaces
-#  else:
-#    surfaces = _gfx_cache[key]
-#  gfx = name(args)
-#  gfx.surfaces = surfaces
-#  gfx.surface = surfaces[gfx.current_frame]
-#  return gfx
-
 def get_gfx(name, args, transparency=False):
-  gfx = name(args)
-  gfx.set_frame(0)
-  return gfx
-
-#def _draw_gfx(cls, args, transparency):
-#  gfx = cls(args)
-#  surfaces = []
-#  t = time.time()
-#  stderr.write("Drawing %s" % cls.__name__)
-#  for i in range(gfx.frames):
-#    stderr.write(".")
-#    surface = pygame.Surface((gfx.width, gfx.height))
-#    if transparency:
-#      surface.set_colorkey((0, 0, 0))
-#    gfx.draw_frame(surface, i)
-#    if transparency:
-#      surfaces.append(surface.convert_alpha())
-#    else:
-#      surfaces.append(surface.convert())
-#  stderr.write(" (%fs)\n" % (time.time() - t))
-#  return surfaces
+  return name(args)
 
 def _periodic_blit(source, destination):
   w, h = source.get_size()
@@ -110,6 +79,7 @@ class Bullet(GFX):
   foo = [(4, 2), (2, 4), (0, 2), (2, 0)]
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, self.rotation = args
 
   @classmethod
@@ -123,6 +93,7 @@ class Bubble(GFX):
 #  foo = [(4, 2), (2, 4), (0, 2), (2, 0)]
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, self.rotation = args
 
   @classmethod
@@ -137,6 +108,7 @@ class MonsterGFX(GFX):
   transparent = True
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, self.rotation = args
 
   @classmethod
@@ -150,6 +122,7 @@ class Monster2GFX(GFX):
   frames = 1
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, self.rotation = args
 
   @classmethod
@@ -164,6 +137,7 @@ class TowerBubbleGFX(GFX):
   transparent = True
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, self.rotation = args
 
   @classmethod
@@ -185,6 +159,7 @@ class TowerLazorGFX(GFX):
   transparent = True
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, self.rotation = args
 
   @classmethod
@@ -206,6 +181,7 @@ class TowerBrain(GFX):
   transparent = True
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, self.rotation = args
     self.recoil = 0
 #    self.scale, self.rotation, self.recoil = args
@@ -226,6 +202,7 @@ class TowerNode(GFX):
   transparent = True
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, self.rotation = args
     self.recoil = 0
 #    self.scale, self.rotation, self.recoil = args
@@ -249,6 +226,7 @@ class TestBackground(GFX):
   frames = 1
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, _ = args
 
   @classmethod
@@ -262,6 +240,7 @@ class Background(GFX):
   compression = 20
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale, _ = args
     self.height = int(self.height * self.scale)
     self.width = int(self.width * self.scale)
@@ -328,6 +307,7 @@ class ManaBar(GFX):
   frames = 1
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale = args[0]
     self.width = self.scale * self.base_width
     self.height = 16
@@ -354,6 +334,7 @@ class CostBar(GFX):
   frames = 1
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale = args[0]
     self.width = self.scale * self.base_width
     self.height = 16
@@ -373,7 +354,6 @@ class CostBar(GFX):
             ary[x][y] = min(255, v)
         ary[x][y] *= 256
     pygame.surfarray.blit_array(surface, ary)
-#    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
 
 class AdrenalineBar(GFX):
   width = base_width = SCREEN_WIDTH - 40
@@ -382,6 +362,7 @@ class AdrenalineBar(GFX):
 #  frames = 16
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale = args[0]
     self.width = self.scale * self.base_width
 #    self.height = 16
@@ -402,7 +383,6 @@ class AdrenalineBar(GFX):
         ary[x][y] *= 256 * 256
 #        ary[x][y] *= 16776960
     pygame.surfarray.blit_array(surface, ary)
-#    rect(surface, (0, 0, 205 + int(50 * abs(sin(n*pi/100)))), Rect(0, 0, self.width, self.height))
 
 class AdrenalineCostBar(GFX):
   width = base_width = SCREEN_WIDTH - 40
@@ -410,6 +390,7 @@ class AdrenalineCostBar(GFX):
   frames = 50
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale = args[0]
     self.width = self.scale * self.base_width
 
@@ -423,6 +404,7 @@ class UIGFX(GFX):
   frames = 1
 
   def __init__(self, args):
+    GFX.__init__(self)
     self.scale = args[0]
 
   @classmethod
