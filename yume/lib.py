@@ -1,11 +1,12 @@
 def cached_method(fnc):
   cache = {}
   def result(self, *args):
-    if args in cache:
+    try:
       return cache[args]
-    value = fnc(self, *args)
-    cache[args] = value
-    return value
+    except:
+      value = fnc(self, *args)
+      cache[args] = value
+      return value
   result._cache = cache
   return result
 
