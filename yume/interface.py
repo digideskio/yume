@@ -10,6 +10,7 @@ from yume.gfx import get_gfx
 from yume.levels import *
 from yume.towers import *
 from yume.widgets import MenuButton
+from yume.items import AdrenalinePill, ManaPotion, SedativePill
 from yume import *
 from yume import gfx
 from yume.lib import cached_method, OpenStruct
@@ -26,22 +27,8 @@ def manabar_pos_transform(mana):
 
 class Interface(object):
   def __init__(self):
-    self.score = 0
-    self.mana = 100.0
-    self.mana_regen = 0.1
-    self.adren = 0.0
-    self.adren_max = 100.0
-    self.adren_baseline = 0.0
-    self.adren_regen = 1
-    self.adren_baseline_regen = -0.1
-    self.dragging = None
-    self.dragged_surface = None
     self.arena = Arena()
     Global.arena = self.arena
-    self.last_update = time.time()
-    self.font = get_font()
-    self.game_over = False
-
     self.adrenbar = get_gfx(gfx.AdrenalineBar, (1, ))
     self.adrenbar_x = -self.adrenbar.width
     self.adren_costbar = get_gfx(gfx.AdrenalineCostBar, (1, ))
@@ -54,42 +41,105 @@ class Interface(object):
     self.load_level(Level1)
 
   def load_level(self, level):
+    self.score = 0
+    self.mana = 100.0
+    self.mana_regen = 0.1
+    self.adren = 0.0
+    self.adren_max = 100.0
+    self.adren_baseline = 0.0
+    self.adren_regen = 1
+    self.adren_baseline_regen = -0.1
+
+    self.basic_mana_regen = self.mana_regen
+    self.basic_adren_regen = self.adren_regen
+    self.basic_adren_baseline_regen = self.adren_baseline_regen
+
+    self.items = 1
+    self.items_active = []
+    self.dragging = None
+    self.dragged_surface = None
+    self.tooltip = None
+
+    self.last_update = time.time()
+    self.font = get_font()
+    self.game_over = False
+
     self.arena.load_level(level)
     self.menu = [self.button_definitions.brain]
-#    Global.yume.log("Press 0 and place your brain to start the game")
+    Global.yume.log("Place the Dream Stone to start the game.")
 
   def initialize_buttons(self):
     buttons = OpenStruct()
+
     buttons['bubble'] = button = MenuButton(gfx.TowerBubbleGFX)
     button.action = lambda: Global.face.press(K_1)
     button.activation_test = lambda: Global.face.mana >= TowerBubble.cost \
         and Global.face.adren + TowerBubble.adrenaline_cost <= Global.face.adren_max
     button.tooltip = "Create a Bubble Tower"
+
     buttons['lazor'] = button = MenuButton(gfx.TowerLazorGFX)
     button.action = lambda: Global.face.press(K_2)
     button.activation_test = lambda: Global.face.mana >= TowerLazor.cost \
         and Global.face.adren + TowerLazor.adrenaline_cost <= Global.face.adren_max
     button.tooltip = "Create a Lazor Tower"
-    buttons['guardian'] = button = MenuButton(gfx.TowerBubbleGFX)
+
+    buttons['virus'] = button = MenuButton(gfx.TowerVirusGFX)
     button.action = lambda: Global.face.press(K_3)
+    button.activation_test = lambda: Global.face.mana >= TowerVirus.cost \
+        and Global.face.adren + TowerVirus.adrenaline_cost <= Global.face.adren_max
+    button.tooltip = "Create a Virus Tower"
+
+    buttons['guardian'] = button = MenuButton(gfx.TowerGuardianGFX)
+    button.action = lambda: Global.face.press(K_4)
     button.activation_test = lambda: Global.face.mana >= TowerGuardian.cost \
         and Global.face.adren + TowerGuardian.adrenaline_cost <= Global.face.adren_max
     button.tooltip = "Create a Guardian Tower"
+
     buttons['brain'] = button = MenuButton(gfx.TowerBrain)
     button.action = lambda: Global.face.press(K_0)
     button.tooltip = "Create a Brain"
+
     buttons['node'] = button = MenuButton(gfx.TowerNode)
     button.action = lambda: Global.face.press(K_9)
     button.activation_test = lambda: Global.face.mana >= TowerNode.cost \
         and Global.face.adren + TowerNode.adrenaline_cost <= Global.face.adren_max
     button.tooltip = "Create a Node"
+
+    buttons['manaPotion'] = button = MenuButton(ManaPotion.graphic)
+    button.action = lambda: Global.face.consume(ManaPotion)
+    button.activation_test = lambda: Global.face.items > 0
+    button.tooltip = "Consume a Mana Potion"
+
+    buttons['adrenPill'] = button = MenuButton(AdrenalinePill.graphic)
+    button.action = lambda: Global.face.consume(AdrenalinePill)
+    button.activation_test = lambda: Global.face.items > 0
+    button.tooltip = "Consume an Adrenaline Pill"
+
+    buttons['sedative'] = button = MenuButton(SedativePill.graphic)
+    button.action = lambda: Global.face.consume(SedativePill)
+    button.activation_test = lambda: Global.face.items > 0
+    button.tooltip = "Consume a Sedative Pill"
     self.button_definitions = buttons
+
+  def consume(self, item):
+    if self.items > 0:
+      self.items -= 1
+      item_instance = item(self)
+      self.items_active.append(item_instance)
+      Global.yume.log("Yummy %s" % item_instance.name)
 
   def update(self):
     dt = time.time() - self.last_update
     self.last_update = time.time()
     if self.game_over:
       return
+
+    for item in tuple(self.items_active):
+      item.update(dt)
+      if item.time_left < 0:
+        item.destroy()
+        self.items_active.remove(item)
+
     self.mana = max(0, self.mana + self.mana_regen * dt)
 
     # adrenaline foo
@@ -106,13 +156,20 @@ class Interface(object):
       else:
         self.adren = max(0, self.adren + self.adren_regen * dt)
 
+    if pygame.mouse.get_pos() == (0, 0):
+      self.tooltip = "This is the edge. XD"
+    else:
+      self.tooltip = None
+
   def crash(self):
     self.adren_baseline += 10
     self.adren += 10
+    self.check_for_death()
+
+  def check_for_death(self):
     if self.adren >= self.adren_max or self.adren_baseline >= self.adren_max:
-      Global.yume.log("You woke up!!")
+      Global.yume.log("You woke up!! Game Over!")
       self.game_over = True
-#    self.mana = int(self.mana * 0.8)
 
   def distance_between(self, x1, y1, x2, y2):
     return sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
@@ -121,6 +178,11 @@ class Interface(object):
     for monster in self.arena.creeps:
       x2, y2 = monster.rect.center
       if sqrt((x1-x2) ** 2 + (y1-y2) ** 2) < rnge:
+        yield monster
+
+  def get_monsters_in_rect(self, rect):
+    for monster in self.arena.creeps:
+      if rect.collidepoint(monster.rect.center):
         yield monster
 
   def get_monsters_in_line(self, x1, y1, x2, y2, width):
@@ -194,20 +256,28 @@ class Interface(object):
     self.draw_status(screen)
 
     x, y = 0, 0
-#    x, y = SCREEN_WIDTH - MenuButton.width, 0
     for button in self.menu:
-      button.draw(screen, (x, y))
-      y += button.height
+      if button:
+        button.draw(screen, (x, y))
+        y += button.height
+      else:
+        y += MenuButton.height
 
   def draw_console(self, screen):
-    x, y = 0, SCREEN_HEIGHT
-    color = 255
-    for text in Global.yume.log_entries:
-      if text is not None:
-        y -= self.font.get_height() + 2
-        text = self.font.render(text, 1, (color, color, color))
-        screen.blit(text, (x, y))
-      color -= 24
+    if self.tooltip:
+      text = self.font.render(self.tooltip, 1, (150, 255, 150))
+      y = SCREEN_HEIGHT - text.get_rect().height
+      screen.fill((0, 0, 0), text.get_rect().inflate(10, 10).move(0, y))
+      screen.blit(text, (0, y))
+    else:
+      color = 255
+      x, y = 0, SCREEN_HEIGHT
+      for text in Global.yume.log_entries:
+        if text is not None:
+          y -= self.font.get_height() + 2
+          text = self.font.render(text, 1, (color, color, color))
+          screen.blit(text, (x, y))
+        color -= 24
 
   def draw_status(self, screen):
     y = 50
@@ -217,9 +287,10 @@ class Interface(object):
     data = dict(fps = round_(Global.yume.clock.get_fps()),
         mana = int(self.mana),
         adrenaline = int(self.adren),
-        adrenalinemax = self.adren_max,
-        genepool = "\n".join(self.arena.level.genepool),
-        level = self.arena.level_number,
+        adrenalinemax = int(self.adren_max),
+        genepool = self.arena.genepool_info,
+        level = self.arena.level.level_number,
+        items = self.items,
         score = self.score)
     status_template = STATUS_TEMPLATE.format(**data)
     for line in status_template.split("\n"):
@@ -236,7 +307,8 @@ class Interface(object):
         except:
           pass
         else:
-          button.action()
+          if button:
+            button.action()
           return
       if self.arena.rect.collidepoint(pos):
         if self.dragging:
@@ -263,12 +335,16 @@ class Interface(object):
     if key == K_2:
       self.drag(TowerLazor)
     if key == K_3:
+      self.drag(TowerVirus)
+    if key == K_4:
       self.drag(TowerGuardian)
     if key == K_0:
       if not self.arena.brain:
         self.drag(TowerBrain)
     if key == K_9:
       self.drag(TowerNode)
+    if key == K_r:
+      self.load_level(Level1)
     if key == K_SPACE:
       self.arena.delay = min(1, self.arena.delay)
 
@@ -280,7 +356,6 @@ class Arena(object):
   def __init__(self):
     self.rect = Rect(ARENA_LEFT_POS, ARENA_TOP_POS,
         ARENA_LEFT_POS + ARENA_WIDTH, ARENA_TOP_POS + ARENA_HEIGHT)
-    self.renderer = pygame.sprite.RenderPlain([])
     self._cache = {}
 
     if Global.yume.test_mode:
@@ -303,7 +378,6 @@ class Arena(object):
   def load_level(self, cls):
     self.level = cls()
     Global.level = self.level
-    self.level_number = 0
     self.last_update = 0
     self.delay = 1
     self.monster_timer = 0
@@ -315,11 +389,12 @@ class Arena(object):
     self.towers = list()
     self.brain = None
     self.nodes = []
-    self.monsters_left = set()
+    self.pools = []
     self.grid = self.level.make_grid((100, 0, 0))
     self.surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
     self.surface.set_colorkey((0, 0, 0))
     self.surface.convert_alpha()
+    self.genepool_info = ""
 
   def release(self, obj, pos):
     if issubclass(obj, Tower):
@@ -349,8 +424,14 @@ class Arena(object):
       Global.face.menu.remove(Global.face.button_definitions['brain'])
       Global.face.menu.append(Global.face.button_definitions['bubble'])
       Global.face.menu.append(Global.face.button_definitions['lazor'])
+      Global.face.menu.append(Global.face.button_definitions['virus'])
       Global.face.menu.append(Global.face.button_definitions['guardian'])
+      Global.face.menu.append(None)
       Global.face.menu.append(Global.face.button_definitions['node'])
+      Global.face.menu.append(None)
+      Global.face.menu.append(Global.face.button_definitions['manaPotion'])
+      Global.face.menu.append(Global.face.button_definitions['adrenPill'])
+      Global.face.menu.append(Global.face.button_definitions['sedative'])
     elif cls == TowerNode:
       self.build_node(tower)
       self.nodes.append(tower)
@@ -378,7 +459,6 @@ class Arena(object):
       monster.look_again_for_tunnel_entry()
 
   def update(self):
-    self.renderer.update()
     if self.last_update and self.brain:
       dt = time.time() - self.last_update
 
@@ -402,18 +482,29 @@ class Arena(object):
 
       if self.monster_timer > 0:
         self.monster_timer -= dt
-      elif self.monsters_left:
-        monster = Monster(self.monsters_left.pop(), self)
+      elif self.pools and self.pools[0].creeps:
+        monster = Monster(self.pools[0].get_next(), self)
         self.spawn(monster)
-        self.monster_timer = 0.5
-      elif not self.creeps:
+        if self.pools[0].boss:
+          self.monster_timer = 1.5
+        else:
+          self.monster_timer = 0.2
+      elif len(self.pools) > 1 and self.pools[1].creeps:
+        del self.pools[0]
+        monster = Monster(self.pools[0].get_next(), self)
+        self.spawn(monster)
         self.monster_timer = 3
-        if self.level_number > 0:
-          self.level.mutate(self.dead_creeps)
+      elif not self.creeps:
+        if self.pools and self.pools[0].boss:
+          Global.face.items += 1
+        self.monster_timer = 5
+        if self.level.level_number > 0:
           Global.face.score += 100
-        self.level_number += 1
-        self.monsters_left = self.level.get_monsters()
+        self.pools = self.level.clone_pools()
+#        self.pools = self.level.get_monsters_of_next_level()
+        self.genepool_info = "\n\n".join((("\n".join(mob.gene for mob in pool.creeps)) for pool in self.pools))
         self.dead_creeps = list()
+        Global.yume.log("Wave number %d will spawn in %d seconds!" % (self.level.level_number, self.monster_timer))
 
     self.last_update = time.time()
 

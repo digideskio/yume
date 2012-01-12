@@ -24,6 +24,9 @@ class Tower(gfx.Drawable):
   def shoot(self, monster):
     Global.arena.projectiles.append(self.projectile(self, monster))
 
+  def hit(self, monster, bullet):
+    monster.damage(bullet.damage, self)
+
 
 class TowerBubble(Tower):
   graphic = gfx.TowerBubbleGFX
@@ -31,7 +34,7 @@ class TowerBubble(Tower):
 #  gfx = gfx.TowerTurretGFX
   cost = 22
   adrenaline_cost = 5
-  cooldown = 14
+  cooldown = 14 # has a variable cooldown
   cooldown_min = 14
   cooldown_step = 2
   range = 130
@@ -47,6 +50,7 @@ class TowerBubble(Tower):
     self.freq = 0
     self.freq2 = 0
     self.animate = False
+    self.has_just_been_built = True
 
   def draw(self, screen):
     screen.blit(self.gfx.surface, (self.x, self.y))
@@ -64,7 +68,9 @@ class TowerBubble(Tower):
 
     if self.cooldown_tick <= 0:
       x, y = self.rect.center
-      if self.special_hits <= 0 and random.random() <= self.special_chance:
+      if self.special_hits <= 0 and random.random() <= self.special_chance \
+          or self.has_just_been_built:
+        self.has_just_been_built = False
         monsters = list(Global.face.get_monsters_in_range(x, y, self.range))
         if len(monsters) >= 1:
           monster = monsters[0]
@@ -75,7 +81,7 @@ class TowerBubble(Tower):
           self.phase = random.random() * pi * 2
         self.special_hits = random.randint(30,90)
         self.freq = pi / random.randint(1, 30)
-        self.freq2 = pi * random.random() * 2
+        self.freq2 = pi * random.random() * 2 + pi
       if self.special_hits > 0:
         for i in range(3):
           self.phase += self.freq * sin(self.freq2 * self.special_hits)
@@ -143,30 +149,71 @@ class TowerLazor(Tower):
       pygame.draw.line(screen, (0, 255, 0), self.rect.center, (x, y), 1)
 
 
-class TowerGuardian(Tower):
-  graphic = gfx.TowerBubbleGFX
-  projectile = ProjectileBullet
-  transparent = True
-  damage = 30
-  range = 80
-  cost = 10
+class TowerVirus(Tower):
+  graphic = gfx.TowerVirusGFX
+  cost = 52
   adrenaline_cost = 5
-  cooldown = 30
-  powerlevel = 5
+  transparent = True
+  range = 200
+  damage = 0
+  cooldown = 42
+  projectile = ProjectileVirus
 
   def __init__(self):
     Tower.__init__(self)
-    self.powerlevel = 0
+    self.cooldown_tick = 0
+
+  def update(self):
+    if self.cooldown_tick > 0:
+      self.cooldown_tick -= 1
+#    self.range = 100 + Global.face.mana
+
+    if self.cooldown_tick <= 0:
+      x, y = self.rect.center
+      monsters = list(Global.face.get_monsters_in_range(x, y, self.range))
+      self.cooldown_tick = self.cooldown
+      if len(monsters) >= 1:
+        monsters = random.sample(monsters, 1)
+      for monster in monsters:
+        self.shoot(monster)
+
+  def hit(self, monster, bullet):
+    Tower.hit(self, monster, bullet)
+    monster.poison(strength=4, duration=10, dealer=self)
+
+
+class TowerGuardian(Tower):
+  graphic = gfx.TowerGuardianGFX
+  projectile = ProjectileGuardianBullet
+  transparent = True
+  damage = 120.0
+  min_damage = 4
+  range = 60
+  cost = 40
+  adrenaline_cost = 5
+  cooldown = 30
+  powerlevel = 0
+  powerlevel_recharge_rate = 1
+  max_powerlevel = 500.0
+
+  def __init__(self):
+    Tower.__init__(self)
     self.target = None
+    self.base_damage = self.damage
     self.cooldown_tick = self.cooldown
 
   def update(self):
-    x, y = self.rect.center
-    self.powerlevel += 1
-    if self.powerlevel >= self.cooldown:
+    if self.cooldown_tick > 0:
+      self.cooldown_tick -= 1
+    if self.powerlevel < self.max_powerlevel:
+      self.powerlevel += self.powerlevel_recharge_rate
+
+    if self.cooldown_tick <= 0:
+      x, y = self.rect.center
       if self.target and self.target.hp > 0 and self.range >= \
         Global.face.distance_between(x, y, self.target.x, self.target.y):
           self.shoot(self.target)
+          self.cooldown_tick = self.cooldown
       else:
         monsters = Global.face.get_random_monster_in_range(x, y, self.range)
         if monsters:
@@ -177,12 +224,17 @@ class TowerGuardian(Tower):
   def draw(self, screen):
     screen.blit(self.gfx.surface, (self.x, self.y))
     self.gfx.next_frame()
-    if self.target:
-      pygame.draw.line(screen, (100, 0, 0), self.rect.center, (self.target.x, self.target.y), 1)
+#    if self.target:
+#      pygame.draw.line(screen, (100, 0, 0), self.rect.center,
+#          (self.target.x, self.target.y), 1)
+
+    wid = max(0, min(self.gfx.width-2, self.gfx.width * self.powerlevel / self.max_powerlevel))
+    pygame.draw.line(screen, (0, 255, 0), (self.x, self.y + self.gfx.height / 2), (self.x + wid, self.y + self.gfx.height / 2), 2)
 
   def shoot(self, target):
-    self.damage = max(5, min(50, log(self.powerlevel - self.cooldown + 1, 1.1)))
-    self.powerlevel = 0
+    self.damage = min(self.base_damage, max(self.min_damage, sqrt(self.powerlevel) + self.base_damage / (1 + self.max_powerlevel - self.powerlevel)))
+    #print(self.damage)
+    self.powerlevel *= 0.6
     Tower.shoot(self, target)
 
 class TowerBrain(Tower):

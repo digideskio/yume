@@ -11,16 +11,23 @@ Adrenaline:
   - Increased when enemies reach your base
   - When adrenaline goes over the maximum, the player wakes up
     and the dream is over
-  - Can be lowered with Pain Killers or increased with Adrenaline Pills
+  - Building stuff raises your adrenaline
+  - Can be lowered with Sedatives or increased with Adrenaline Pills
   - Increases efficiency of certain towers
   - Spells become more focused
   - Slowly restored towards baseline
-  - The baseline is increased when building towers, to limit the number of
-    towers you can build
-  - Game runs more slowly with higher adrenaline
+  - Game runs more slowly with higher adrenaline?
   - Other things that raise adrenaline temporarily?
 
-instead of mazing with blocking towers
+  Discarded idea:
+  - The baseline is increased when building towers, to limit the number of
+    towers you can build
+
+instead of sqrt((x-a)^2 + (y-b)^2) < r use abs(x-a) < r and abs(y-b) < r
+for projectile hit testing
+
+instead of mazing with blocking towers, you have to build a "tunnel" through
+which monsters have to go
 
 a tower that always shoots in every direction, but the range in a
 particular direction is dependent on the number of monsters in that
@@ -66,6 +73,11 @@ Towers:
     + Beam causes an explosion when target is switched
     + Drag & Droppable
     + Synergy with other UFO's 
+- Virus Tower:
+    + Shoots high speed projectiles
+    + Poison enemies
+    + Poisoned enemies will not recover HP
+    o Maybe some evolutionary aspects?
 - Crystal Ball:
     o Has a radius of action rather than a projectile
     + Higher Radius when the player has more mana
@@ -87,9 +99,14 @@ Towers:
     o Shoots at random monsters
     + Successful hits will pause monsters for a short time
     - Reduces efficiency of nearby towers
+- A sniper tower
 - Brain:
     o Lose a life (increase adrenaline baseline) when monster reach the brain
     o Requires 2x2 cells
+- Node:
+    o Monsters have to walk through this node to get to the brain
+- Sticky Node?:
+    + Same as node, but monsters are slower here
 
 Spells:
 - Fire: Damages towers and enemies in a given radius
@@ -102,6 +119,7 @@ Items:
     Duration: 2 Minutes
     o Fills Adrenaline Bar, so if a single monster gets through, you wake up
     + After the effect wore off, lower Adrenaline to zero
+    - This item sounds rather pointless since towers now cost adrenaline
 - Mana Potions:
     Duratoin: 2 minutes
     + Quadruples Mana Regeneration

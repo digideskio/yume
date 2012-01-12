@@ -5,59 +5,108 @@ from collections import deque
 from yume.monsters import *
 from yume import *
 
+class MetaMonster(object):
+  def __init__(self, gene=""):
+    self.gene, self.fitness = gene, 1
+
+  def clone(self):
+    return MetaMonster(self.gene)
+
+
+class Pool(object):
+  def __init__(self, startgene, startpopulation, boss=False, creeps=None):
+    self.startgene = startgene
+    self.startpopulation = startpopulation
+    self.boss = boss
+    self.monsters_left = startpopulation
+    if creeps == None:
+      self.creeps = [MetaMonster(startgene) for _ in range(startpopulation)]
+    else:
+      self.creeps = creeps
+
+  def clone(self):
+    return Pool(self.startgene, self.startpopulation, self.boss, creeps=list(self.creeps))
+
+  def get_next(self):
+    return self.creeps.pop()
+
+
 class Level(object):
-  def __init__(self, startgene="", pools=1):
-    self.individuals = 10
-    self.genepool = [startgene] * self.individuals
+  def __init__(self, startgene=""):
+    self.boss_freq = 4
+    self.level_number = 0
+    self.genepools = []
+    self.genepools.append(Pool(startgene + "B", 3, boss=True))
+    self.genepools.append(Pool(startgene, 6))
+    self.genepools.append(Pool(startgene, 6))
+    self.genepools.append(Pool(startgene, 6))
     self.sampling_method = self.sm_stochastic_universal_sampling
 
-  def sm_fittest(self):
-    pool = list(self.dead_monsters)
-    pool.sort(key=lambda mob: -mob.fitness)
-    fittest = pool[0].gene
-    mutated = fittest + random.sample(Monster.traits, 1)[0]
-    mutated = self.single_mutation(mutated)
-    self.genepool = [mutated] * self.individuals
+  #def sm_fittest(self):
+    #pool = list(self.dead_monsters)
+    #pool.sort(key=lambda mob: -mob.fitness)
+    #fittest = pool[0].gene
+    #mutated = fittest + random.sample(Monster.traits, 1)[0]
+    #mutated = self.single_mutation(mutated)
+    #self.genepool = [mutated] * self.individuals
 
-  def sm_stochastic_universal_sampling(self):
-    pool = list(self.dead_monsters)
-    pool.sort(key=lambda mob: -mob.fitness)
-    total_fitness = sum(mob.fitness for mob in self.dead_monsters)
-    step = 1.0 / self.individuals
-    self.genepool = []
+  def sm_stochastic_universal_sampling(self, pool):
+    pool.sort(key=lambda meta: -meta.fitness)
+    total_fitness = sum(meta.fitness for meta in pool)
+    step = 1.0 / len(pool)
+    new_pool = []
 
     pos = random.random() * step
     accumulated_fitness = pool[0].fitness
     index = 0
-    for i in range(self.individuals):
+    for i in range(len(pool)):
       while pos > accumulated_fitness:
         accumulated_fitness += pool[index].fitness
         index += 1
-      gene = pool[index].gene + random.sample(Monster.traits, 1)[0]
-      gene = self.single_mutation(gene)
-      self.genepool.append(gene)
+      meta = pool[index].clone()
+      new_pool.append(meta)
+    return new_pool
 
-  def mutate(self, dead_monsters):
-    self.dead_monsters = dead_monsters
-    self.sampling_method()
+  def mutate(self):
+    if self.level_number % self.boss_freq == 0:
+      self.genepools[0].creeps = self.sampling_method(self.genepools[0].creeps)
+      for meta in self.genepools[0].creeps:
+        for _ in range(8):
+          meta.gene += random.sample(Monster.traits, 1)[0]
+        for _ in range(4):
+          meta.gene = self.single_mutation(meta.gene)
+    else:
+      for i in range(1, len(self.genepools)):
+        self.genepools[i].creeps = self.sampling_method(self.genepools[i].creeps)
+        for meta in self.genepools[i].creeps:
+          meta.gene += random.sample(Monster.traits, 1)[0]
+          meta.gene = self.single_mutation(meta.gene)
+          meta.gene = self.single_mutation(meta.gene)
+          meta.gene = self.single_mutation(meta.gene)
 
   def single_mutation(self, gene):
-    if gene and random.randint(0, 1):
-      if random.randint(1,3) == 1:
-        # append random trait
-        return gene + random.sample(Monster.traits, 1)[0]
-      else:
+    if random.randint(0, 2):
+      if gene and random.randint(1, 4) < 4:
         # swap one trait
         gene_l = list(gene)
-        gene_l[random.randint(0, len(gene)-1)] = random.sample(Monster.traits, 1)[0]
+        random_pos = random.randint(0, len(gene)-1)
+        if gene_l[random_pos] != 'B':
+          gene_l[random_pos] = random.sample(Monster.traits, 1)[0]
         return ''.join(gene_l)
-    else:
-      return gene
+      else:
+        # append random trait
+        return gene + random.sample(Monster.traits, 1)[0]
+    return gene
 
-  def get_monsters(self):
-    self.last_monsters = tuple(self.genepool)
-#    self.last_monsters = tuple(self.single_mutation(gene) for gene in self.genepool)
-    return list(self.last_monsters)
+  def get_monsters_of_next_level(self):
+    self.level_number += 1
+    self.mutate()
+    if self.level_number % self.boss_freq == 0:
+      return [self.genepools[0].clone()]
+    else:
+      return [pool.clone() for pool in self.genepools[1:]]
+
+  clone_pools = get_monsters_of_next_level
 
   def make_grid(self, color):
     surface = pygame.Surface((ARENA_WIDTH, ARENA_HEIGHT))
@@ -93,8 +142,7 @@ class Level(object):
 class Level1(Level):
   def __init__(self):
     self.startgene = ""
-    self.pools = 1
-    Level.__init__(self, self.startgene, self.pools)
+    Level.__init__(self, self.startgene)
     self.level = \
    """.................E.....................
       .......................................

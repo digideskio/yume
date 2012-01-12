@@ -43,9 +43,6 @@ class Yume(object):
 
   def log(self, text):
     self.log_entries.appendleft(text)
-#    if self.interface is not None:
-#      self.interface.draw_console(self.screen)
-#      pygame.display.flip()
 
   def parse_args(self):
     p = OptionParser(usage="%prog [options]")

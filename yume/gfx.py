@@ -86,11 +86,71 @@ class Bullet(GFX):
   def draw_frame(self, surface, n):
     line(surface, (205, 100, 255), (2, 2), self.foo[n])
 
+class AdrenalinePillGFX(GFX):
+  height = 24
+  width = 24
+  frames = 1
+  transparent = True
+  color = (220, 130, 50)
+
+  def __init__(self, args):
+    GFX.__init__(self)
+    self.scale, self.rotation = args
+
+  @classmethod
+  def draw_frame(self, surface, n):
+    layer = pygame.Surface((self.width * 4, self.height * 4))
+    layer.set_colorkey((0, 0, 0))
+    ellipse(layer, self.color, Rect(20, 8, 52, 80))
+    ellipse(layer, (10, 10, 10), Rect(20, 8, 52, 80), 1)
+    layer = pygame.transform.rotate(layer, 40)
+    surface.blit(pygame.transform.smoothscale(layer, (self.width, self.height)), (0, 0))
+
+
+class SedativePillGFX(AdrenalinePillGFX):
+  color = (220, 220, 220)
+
+  @classmethod
+  def draw_frame(self, surface, n):
+    layer = pygame.Surface((self.width * 4, self.height * 4))
+    layer.set_colorkey((0, 0, 0))
+    ellipse(layer, self.color, Rect(20, 8, 52, 80))
+    ellipse(layer, (10, 10, 10), Rect(20, 8, 52, 80), 1)
+    line(layer, (10, 10, 10), (20, 44), (72, 44), 2)
+    layer = pygame.transform.rotate(layer, -27)
+    surface.blit(pygame.transform.smoothscale(layer, (self.width, self.height)), (0, 0))
+
+class ManaPotionGFX(GFX):
+  height = 24
+  width = 24
+  frames = 1
+  transparent = True
+
+  def __init__(self, args):
+    GFX.__init__(self)
+    self.scale, self.rotation = args
+
+  @classmethod
+  def draw_frame(self, surface, n):
+    points = []
+    points.append((8, 4))
+    points.append((16, 4))
+    points.append((16, 15))
+    points.append((22, 20))
+    points.append((22, 22))
+    points.append((2, 22))
+    points.append((2, 20))
+    points.append((8, 15))
+    points = list(map(lambda p: (p[0]*4, p[1]*4), points))
+    layer = pygame.Surface((self.width * 4, self.height * 4))
+    polygon(layer, (0, 0, 255), points)
+    polygon(layer, (30, 30, 30), points, 2)
+    surface.blit(pygame.transform.smoothscale(layer, (self.width, self.height)), (0, 0))
+
 class Bubble(GFX):
   height = 5
   width = 5
   frames = 1
-#  foo = [(4, 2), (2, 4), (0, 2), (2, 0)]
 
   def __init__(self, args):
     GFX.__init__(self)
@@ -99,7 +159,32 @@ class Bubble(GFX):
   @classmethod
   def draw_frame(self, surface, n):
     circle(surface, (255, 255, 255), (2, 2), 2)
-#    line(surface, (205, 100, 255), (2, 2), self.foo[n])
+
+class GuardianBullet(GFX):
+  height = 5
+  width = 5
+  frames = 1
+
+  def __init__(self, args):
+    GFX.__init__(self)
+    self.scale, self.rotation = args
+
+  @classmethod
+  def draw_frame(self, surface, n):
+    rect(surface, (190, 190, 190), Rect(0, 0, self.width, self.width))
+
+class Virus(GFX):
+  height = 5
+  width = 5
+  frames = 1
+
+  def __init__(self, args):
+    GFX.__init__(self)
+    self.scale, self.rotation = args
+
+  @classmethod
+  def draw_frame(self, surface, n):
+    circle(surface, (0, 255, 0), (2, 2), 2)
 
 class MonsterGFX(GFX):
   height = 10
@@ -168,6 +253,51 @@ class TowerLazorGFX(GFX):
     layer = pygame.Surface((self.width, self.height))
     circle(layer, (40, 40, 40), (12, 12), 12)
     circle(layer, (100, 100, 100), (12, 12), 12, 1)
+    wid = self.width
+    hei = int(self.height * (cos(n*pi/16) + 4) / 5.0)
+    surface.blit(pygame.transform.smoothscale(layer, (wid, hei)), (0, self.height - hei))
+#    circle(surface, (12, 12), 12)
+#    circle(surface, (0, 255, 0), (12, 12), 12, 1)
+
+class TowerGuardianGFX(GFX):
+  height = 24
+  width = 24
+  frames = 1
+  transparent = True
+
+  def __init__(self, args):
+    GFX.__init__(self)
+    self.scale, self.rotation = args
+
+  @classmethod
+  def draw_frame(self, surface, n):
+#    wid = self.width * (sin(n*pi/8) + 8) / 9.0
+    layer = pygame.Surface((self.width, self.height))
+    circle(layer, (40, 100, 40), (12, 12), 12)
+    circle(layer, (100, 100, 100), (12, 12), 12, 1)
+    wid = self.width
+    hei = int(self.height * (cos(n*pi/16) + 4) / 5.0)
+    surface.blit(pygame.transform.smoothscale(layer, (wid, hei)), (0, self.height - hei))
+#    circle(surface, (12, 12), 12)
+#    circle(surface, (0, 255, 0), (12, 12), 12, 1)
+
+class TowerVirusGFX(GFX):
+  height = 24
+  width = 24
+  frames = 1
+  transparent = True
+
+  def __init__(self, args):
+    GFX.__init__(self)
+    self.scale, self.rotation = args
+
+  @classmethod
+  def draw_frame(self, surface, n):
+#    wid = self.width * (sin(n*pi/8) + 8) / 9.0
+    layer = pygame.Surface((self.width, self.height))
+    circle(layer, (40, 240, 40), (12, 12), 10)
+    circle(layer, (100, 100, 100), (12, 12), 10, 1)
+    circle(layer, (240, 140, 40), (12, 12), 4)
     wid = self.width
     hei = int(self.height * (cos(n*pi/16) + 4) / 5.0)
     surface.blit(pygame.transform.smoothscale(layer, (wid, hei)), (0, self.height - hei))

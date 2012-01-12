@@ -5,6 +5,7 @@ from yume import *
 from yume import gfx
 from yume.gfx import get_gfx
 from yume.resource import *
+from pygame import Rect
 
 class Projectile(gfx.Drawable):
   def __init__(self, origin, target):
@@ -23,15 +24,48 @@ class Projectile(gfx.Drawable):
     except:
       pass
 
-
-class ProjectileBullet(Projectile):
+class ProjectileDumb(Projectile):
   aoe = 7
   hits = 1
-  speed = 2
+  def __init__(self, origin, target):
+    Projectile.__init__(self, origin, target)
+    if hasattr(target, 'rect'):
+      self.tx, self.ty = target.rect.center
+    else:
+      self.tx, self.ty = target
+    direction = atan2(self.ty - self.y, self.tx - self.x)
+    self.dx = cos(direction) * self.speed
+    self.dy = sin(direction) * self.speed
+    self.damage = origin.damage
+    self.distance = origin.range / self.speed
+    self.traveled_distance = random.randint(0, 5)
+
+  def update(self):
+    self.x += self.dx
+    self.y += self.dy
+    self.traveled_distance += 1
+    if self.traveled_distance >= self.distance:
+      return self.destroy()
+    area = Rect(self.x, self.y, self.aoe, self.aoe)
+#    area = Rect(self.x-self.aoe/2, self.y-self.aoe/2, self.aoe, self.aoe)
+    monsters = list(Global.face.get_monsters_in_rect(area))
+    if monsters:
+      i = 0
+      for monster in monsters:
+        self.origin.hit(monster, self)
+        i += 1
+        if i >= self.hits:
+          break
+      self.destroy()
+
+class ProjectileBullet(ProjectileDumb):
+  aoe = 7
+  hits = 1
+  speed = 3
   graphic = gfx.Bubble
 
   def __init__(self, origin, target):
-    Projectile.__init__(self, origin, target)
+    ProjectileDumb.__init__(self, origin, target)
     if hasattr(target, 'rect'):
       self.tx, self.ty = target.rect.center
       distance = sqrt((self.tx-self.x) ** 2 + (self.ty-self.y) ** 2) / self.speed
@@ -47,18 +81,11 @@ class ProjectileBullet(Projectile):
     self.distance = origin.range / self.speed
     self.traveled_distance = random.randint(0, 5)
 
-  def update(self):
-    self.x += self.dx
-    self.y += self.dy
-    self.traveled_distance += 1
-    if self.traveled_distance >= self.distance:
-      return self.destroy()
-    monsters = list(Global.face.get_monsters_in_range(self.x, self.y, self.aoe))
-    if monsters:
-      i = 0
-      for monster in monsters:
-        monster.damage(self.damage, self.origin)
-        i += 1
-        if i >= self.hits:
-          break
-      self.destroy()
+class ProjectileGuardianBullet(ProjectileBullet):
+  graphic = gfx.GuardianBullet
+  speed = 4
+
+
+class ProjectileVirus(ProjectileDumb):
+  speed = 2
+  graphic = gfx.Virus

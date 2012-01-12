@@ -20,3 +20,10 @@ FPS: {fps}
 
 Gene Pool:
 {genepool}"""
+
+STATUS_TEMPLATE = """score: {score}
+level: {level}
+mana: {mana}
+adrenaline: {adrenaline}/{adrenalinemax}
+items available: {items}
+FPS: {fps}"""
