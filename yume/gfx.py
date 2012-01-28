@@ -171,7 +171,7 @@ class GuardianBullet(GFX):
 
   @classmethod
   def draw_frame(self, surface, n):
-    rect(surface, (190, 190, 190), Rect(0, 0, self.width, self.width))
+    rect(surface, (255, 190, 190), Rect(0, 0, self.width, self.width))
 
 class Virus(GFX):
   height = 5

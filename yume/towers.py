@@ -22,9 +22,11 @@ class Tower(gfx.Drawable):
     self.gridpos = gridpos
 
   def shoot(self, monster):
+    Global.arena.shots += 1
     Global.arena.projectiles.append(self.projectile(self, monster))
 
   def hit(self, monster, bullet):
+    Global.arena.hits += 1
     monster.damage(bullet.damage, self)
 
 
@@ -50,7 +52,7 @@ class TowerBubble(Tower):
     self.freq = 0
     self.freq2 = 0
     self.animate = False
-    self.has_just_been_built = True
+    self.has_just_been_built = False
 
   def draw(self, screen):
     screen.blit(self.gfx.surface, (self.x, self.y))
@@ -76,10 +78,12 @@ class TowerBubble(Tower):
           monster = monsters[0]
           x, y = monster.rect.center
           a, b = self.rect.center
-          self.phase = atan2(y - b, x - a) - pi / 2
+#          self.phase = atan2(x - a, y - b)
+          self.phase = atan2(y - b, x - a) + pi / 2
         else:
           self.phase = random.random() * pi * 2
-        self.special_hits = random.randint(30,90)
+        #self.special_hits = random.randint(30,90)
+        self.special_hits = random.randint(80,180)
         self.freq = pi / random.randint(1, 30)
         self.freq2 = pi * random.random() * 2 + pi
       if self.special_hits > 0:
@@ -107,9 +111,9 @@ class TowerBubble(Tower):
 class TowerLazor(Tower):
   graphic = gfx.TowerLazorGFX
   transparent = True
-  damage = 1
+  damage = 2
   range = 100
-  cost = 10
+  cost = 16
   adrenaline_cost = 5
 
   def __init__(self):
@@ -152,7 +156,7 @@ class TowerLazor(Tower):
 class TowerVirus(Tower):
   graphic = gfx.TowerVirusGFX
   cost = 52
-  adrenaline_cost = 5
+  adrenaline_cost = 8
   transparent = True
   range = 200
   damage = 0
@@ -190,7 +194,7 @@ class TowerGuardian(Tower):
   min_damage = 4
   range = 60
   cost = 40
-  adrenaline_cost = 5
+  adrenaline_cost = 8
   cooldown = 30
   powerlevel = 0
   powerlevel_recharge_rate = 1

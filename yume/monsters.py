@@ -61,12 +61,14 @@ class Monster(gfx.Drawable):
     if boss:
       self.hp *= 4
     self.max_hp = self.hp
-    self.speed = 0.7 + (gene.count('v') * 0.15)
+    self.speed = 0.7 + gene.count('v') * 0.15 * \
+        (1.0 - tanh(2.0 * gene.count('v') / len(gene)))
+#    self.speed = 0.7 + (gene.count('v') * 0.15)
     self.shield = gene.count('s') * 3
     self.max_shield = self.shield
     self.worth = log(len(gene) + 2)
     self.armor = gene.count('a') / 6.0
-    self.poison_resistance = 1.0 / (1 + gene.count('i') / 2.0)
+    self.poison_resistance = 1.0 / (1 + gene.count('i') / 2.0) # XXX
     if boss:
       self.armor += 2
       self.worth *= 5
@@ -122,7 +124,7 @@ class Monster(gfx.Drawable):
     else:
       self.tunnel_entered = True
       if self.current_node_index <= 0:
-        Global.yume.interface.crash()
+        Global.yume.interface.crash(float(self.hp) / float(self.max_hp))
         self.meta.fitness += 2000
         self.die()
       else:

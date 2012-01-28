@@ -46,7 +46,7 @@ class ProjectileDumb(Projectile):
     self.traveled_distance += 1
     if self.traveled_distance >= self.distance:
       return self.destroy()
-    area = Rect(self.x, self.y, self.aoe, self.aoe)
+    area = Rect(self.x - self.aoe, self.y - self.aoe, 2 * self.aoe, 2 * self.aoe)
 #    area = Rect(self.x-self.aoe/2, self.y-self.aoe/2, self.aoe, self.aoe)
     monsters = list(Global.face.get_monsters_in_rect(area))
     if monsters:
@@ -84,6 +84,7 @@ class ProjectileBullet(ProjectileDumb):
 class ProjectileGuardianBullet(ProjectileBullet):
   graphic = gfx.GuardianBullet
   speed = 4
+  aoe = 10
 
 
 class ProjectileVirus(ProjectileDumb):

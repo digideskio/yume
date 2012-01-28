@@ -15,15 +15,11 @@ CELLS_Y = ARENA_HEIGHT / CELL_HEIGHT
 STATUS_TEMPLATE = """score: {score}
 level: {level}
 mana: {mana}
+hits/shots = {hits}/{shots}
+aiming = {hitpercent}%
 adrenaline: {adrenaline}/{adrenalinemax}
+items available: {items}
 FPS: {fps}
 
 Gene Pool:
 {genepool}"""
-
-STATUS_TEMPLATE = """score: {score}
-level: {level}
-mana: {mana}
-adrenaline: {adrenaline}/{adrenalinemax}
-items available: {items}
-FPS: {fps}"""

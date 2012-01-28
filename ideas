@@ -51,6 +51,8 @@ Monsters randomly drop powerups when die
 
 Monsters mutate to counter the players strategy
 
+Monsters turn certain kind of damage into power
+
 Towers:
 - Bubbles:
     o Shoots high speed projectiles at random enemies

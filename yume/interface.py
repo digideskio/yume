@@ -36,6 +36,7 @@ class Interface(object):
     self.manabar_x = -self.manabar.width
     self.costbar = get_gfx(gfx.CostBar, (1, ))
     self.costbar_x = -self.costbar.width
+    self.game_paused = False
 
     self.initialize_buttons()
     self.load_level(Level1)
@@ -131,7 +132,7 @@ class Interface(object):
   def update(self):
     dt = time.time() - self.last_update
     self.last_update = time.time()
-    if self.game_over:
+    if self.game_over or self.game_paused:
       return
 
     for item in tuple(self.items_active):
@@ -160,10 +161,15 @@ class Interface(object):
       self.tooltip = "This is the edge. XD"
     else:
       self.tooltip = None
+    self.arena.update()
 
-  def crash(self):
-    self.adren_baseline += 10
-    self.adren += 10
+  def crash(self, percent):
+    damage = 10 * percent
+    self.adren_baseline += damage
+    self.adren += damage
+    damagestr = ((damage * 100) // 10) / 10
+    damagestr = int(damagestr) if damagestr % 1 == 0 else damagestr
+    Global.yume.log("Hit for %s adrenaline!" % str(damagestr))
     self.check_for_death()
 
   def check_for_death(self):
@@ -175,32 +181,36 @@ class Interface(object):
     return sqrt((x1-x2) ** 2 + (y1-y2) ** 2)
 
   def get_monsters_in_range(self, x1, y1, rnge):
+    area = Rect(x1 - rnge, y1 - rnge, 2 * rnge, 2 * rnge)
     for monster in self.arena.creeps:
       x2, y2 = monster.rect.center
-      if sqrt((x1-x2) ** 2 + (y1-y2) ** 2) < rnge:
-        yield monster
+      if area.collidepoint((x2, y2)):
+        if sqrt((x1-x2) ** 2 + (y1-y2) ** 2) < rnge:
+          yield monster
 
   def get_monsters_in_rect(self, rect):
     for monster in self.arena.creeps:
       if rect.collidepoint(monster.rect.center):
         yield monster
 
-  def get_monsters_in_line(self, x1, y1, x2, y2, width):
+  def get_monsters_in_line(self, x1, y1, x2, y2, radius):
+    area = Rect(min(x1, x2) - radius, min(y1, y2) - radius,
+        max(x1, x2) - min(x1, x2) + 2 * radius,
+        max(y1, y2) - min(y1, y2) + 2 * radius)
+
     for monster in self.arena.creeps:
-      try:
-        dx, dy = x2 - x1, y2 - y1
-        slope = float(dy) / dx
-        d_vert = monster.y - (slope * monster.x + (y1 - slope * x1))
-        slope = float(dx) / dy
-        d_hori = monster.x - (slope * monster.y + (x1 - slope * y1))
-        dist = sqrt((d_hori*d_hori * d_vert*d_vert) / (d_hori*d_hori + d_vert*d_vert))
-        if dist >= width:
-          continue
-      except ZeroDivisionError:
-        pass
-      if monster.x + width >= min(x1, x2) and monster.x - width <= max(x1, x2) and \
-         monster.y + width >= min(y1, y2) and monster.y - width <= max(y1, y2):
-           yield monster
+      if area.collidepoint((monster.x, monster.y)):
+        try:
+          dx, dy = x2 - x1, y2 - y1
+          slope = float(dy) / dx
+          d_vert = monster.y - (slope * monster.x + (y1 - slope * x1))
+          slope = float(dx) / dy
+          d_hori = monster.x - (slope * monster.y + (x1 - slope * y1))
+          dist = sqrt((d_hori*d_hori * d_vert*d_vert) / (d_hori*d_hori + d_vert*d_vert))
+          if dist < radius:
+            yield monster
+        except ZeroDivisionError:
+          yield monster
 
   def get_random_monster_in_range(self, x1, y1, rnge, n=1):
     monsters = list(self.get_monsters_in_range(x1, y1, rnge))
@@ -211,7 +221,9 @@ class Interface(object):
   def draw(self, screen):
     w, h = screen.get_size()
 
-    self.arena.update()
+    if self.game_paused:
+      return
+
     self.arena.draw(screen)
 
     offset = 10
@@ -289,6 +301,9 @@ class Interface(object):
         adrenaline = int(self.adren),
         adrenalinemax = int(self.adren_max),
         genepool = self.arena.genepool_info,
+        shots = self.arena.shots,
+        hits = self.arena.hits,
+        hitpercent = round_(self.arena.hits * 100.0 / (self.arena.shots or 1)),
         level = self.arena.level.level_number,
         items = self.items,
         score = self.score)
@@ -330,6 +345,8 @@ class Interface(object):
     self.dragging = None
 
   def press(self, key):
+    if key == K_SPACE:
+      self.game_paused ^= True
     if key == K_1:
       self.drag(TowerBubble)
     if key == K_2:
@@ -383,6 +400,8 @@ class Arena(object):
     self.monster_timer = 0
     self.tower_positions = self.level.cells
 
+    self.shots = 0
+    self.hits = 0
     self.dead_creeps = list()
     self.creeps = list()
     self.projectiles = list()
@@ -526,6 +545,7 @@ class Arena(object):
       creep.draw_hp_bar(screen)
     for projectile in self.projectiles:
       projectile.draw(screen)
+    self.surface.fill((0, 0, 0))
 
   def draw_node_info(self, screen):
     if not self.nodes:
@@ -551,30 +571,30 @@ class Arena(object):
     #   / line(x) = m * x + c
     # /
 #    print("calculating for %d %d %d %d %d %d" % (nodex, nodey, cellx, celly, mousex, mousey))
-    try:
-      dx = mousex - nodex
-      dy = mousey - nodey
-
-      m = float(dy) / dx
-      c = nodey - m * nodex
-      a = celly - (m * cellx + c)
-
-      m = float(dx) / dy
-      c = nodex - m * nodey
-      b = cellx - (m * celly + c)
-
-      h = sqrt((a*a * b*b) / (a*a + b*b))
-      if h >= 0.5:
-        return False
-    except ZeroDivisionError:
-      pass
     topleftx = min(nodex, mousex)
     toplefty = min(nodey, mousey)
     bottomrightx = max(nodex, mousex)
     bottomrighty = max(nodey, mousey)
+
     if cellx >= topleftx and cellx <= bottomrightx and\
         celly >= toplefty and celly <= bottomrighty:
-      return True
+      try:
+        dx = mousex - nodex
+        dy = mousey - nodey
+
+        m = float(dy) / dx
+        c = nodey - m * nodex
+        a = celly - (m * cellx + c)
+
+        m = float(dx) / dy
+        c = nodex - m * nodey
+        b = cellx - (m * celly + c)
+
+        h = sqrt((a*a * b*b) / (a*a + b*b))
+        if h < 0.5:
+          return True
+      except ZeroDivisionError:
+        return True
     return False
 
   def node_allowed_here(self, x, y):
