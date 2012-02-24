@@ -545,7 +545,6 @@ class Arena(object):
       creep.draw_hp_bar(screen)
     for projectile in self.projectiles:
       projectile.draw(screen)
-    self.surface.fill((0, 0, 0))
 
   def draw_node_info(self, screen):
     if not self.nodes:
