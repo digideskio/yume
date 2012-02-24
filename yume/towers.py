@@ -125,31 +125,35 @@ class TowerLazor(Tower):
   def update(self):
     x, y = self.rect.center
     self.tick += 1
-    if self.tick >= 3:
-      self.tick = 0
-      targets = list(Global.face.get_monsters_in_line(x, y, x + sin(self.phase) * self.range, y + cos(self.phase) * self.range, 10))
-      if self.target and self.target.hp > 0 and self.range >= \
-        Global.face.distance_between(x, y, self.target.x, self.target.y) and \
-        (self.target in targets or not targets):
-          angle = atan2(self.target.x - x, self.target.y - y)
-          diff = self.phase - angle
-          self.phase = angle if abs(diff) < 0.04 else self.phase - max(-0.1, min(0.1, diff))
-          for mob in targets:
-            mob.damage(self.damage, self, ignore_shield=True)
+    if self.tick < 3:
+      return
+
+    self.tick = 0
+    targets = list(Global.face.get_monsters_in_line(x, y, x + cos(self.phase) * self.range, y + sin(self.phase) * self.range, 10))
+    if self.target and self.target.hp > 0 and self.range >= \
+      Global.face.distance_between(x, y, self.target.x, self.target.y) and \
+      (self.target in targets or not targets):
+        # angle is the angle between the tower and the monster
+        # phase is the orientation of the laser
+        angle = atan2(self.target.y - y, self.target.x - x)
+        diff = (self.phase - angle + pi) % (2 * pi) - pi
+        self.phase = angle if abs(diff) < 0.04 else self.phase - max(-0.1, min(0.1, diff))
+        for mob in targets:
+          mob.damage(self.damage, self, ignore_shield=True)
+    else:
+      monsters = Global.face.get_random_monster_in_range(x, y, self.range)
+      if monsters:
+        self.target = monsters[0]
       else:
-        monsters = Global.face.get_random_monster_in_range(x, y, self.range)
-        if monsters:
-          self.target = monsters[0]
-        else:
-          self.target = None
+        self.target = None
 
   def draw(self, screen):
     screen.blit(self.gfx.surface, (self.x, self.y))
 #    self.gfx.next_frame()
     if self.target:
       x, y = self.rect.center
-      x += sin(self.phase) * self.range
-      y += cos(self.phase) * self.range
+      x += cos(self.phase) * self.range
+      y += sin(self.phase) * self.range
       pygame.draw.line(screen, (0, 255, 0), self.rect.center, (x, y), 1)
 
 
