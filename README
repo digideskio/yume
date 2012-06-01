@@ -1,0 +1,8 @@
+Yume is a weird tower defense game that is set in a dream.
+It uses adrenaline and mana instead of health points and money,
+the monsters are generated with genetic algorithms, and I'm sure
+there are other cool features which I have forgotten.
+
+It's also unfinished.
+
+Requires python ~2.7 with numpy and pygame.
