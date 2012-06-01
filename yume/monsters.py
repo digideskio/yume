@@ -63,6 +63,10 @@ class Monster(gfx.Drawable):
     self.max_hp = self.hp
     self.speed = 0.7 + gene.count('v') * 0.15 * \
         (1.0 - tanh(2.0 * gene.count('v') / len(gene)))
+#=======
+#    self.speed = 0.7 + gene.count('v') * 0.15 * tanh(2.0 * gene.count('v') / len(gene))
+##    self.speed = 0.7 + gene.count('v') * 0.15 * erfc(2.0 * gene.count('v') / len(gene))
+#>>>>>>> ee9d540393117a38b7615e8be4b68433e99f2c2e
 #    self.speed = 0.7 + (gene.count('v') * 0.15)
     self.shield = gene.count('s') * 3
     self.max_shield = self.shield
